@@ -405,11 +405,11 @@ barplot(100*prop.table(table(cut(dat$Plasma[dat$Plasma>0],c(0,1,2,3,4,5,10,100,m
 ```
 ```{r}
 #RBP
-RBP<-read.delim("../JA20150_combined/150_RBP_AGO_DICER.info")
-Cell<-read.table("../JA20150_combined/4cell_plasma_RBP.counts",col.names=c("ID","Cells"))
-FLEXI<-read.table("../JA20150_combined/all_FLEXI_RBP.counts",col.names=c("ID","All_FLEXI"))
-Intron<-read.table("../JA20150_combined/all_intron_RBP.counts",col.names=c("ID","All_Intron"))
-Genome<-read.table("../JA20150_combined/GRCh38_RBP.counts",col.names=c("ID","GRCh38"))
+RBP<-read.delim("150_RBP_AGO_DICER.info")
+Cell<-read.table("4cell_plasma_RBP.counts",col.names=c("ID","Cells"))
+FLEXI<-read.table("all_FLEXI_RBP.counts",col.names=c("ID","All_FLEXI"))
+Intron<-read.table("all_intron_RBP.counts",col.names=c("ID","All_Intron"))
+Genome<-read.table("GRCh38_RBP.counts",col.names=c("ID","GRCh38"))
 RBP<-merge(RBP,Cell,by=1,all=T)
 RBP<-merge(RBP,FLEXI,by=1,all=T)
 RBP<-merge(RBP,Intron,by=1,all=T)
@@ -495,23 +495,6 @@ barplot(Com[1:10,2],ylim=c(0,400),names.arg = Com[1:10,1],las=2,beside=F)
 dev.off()
 ```
 ```{r}
-#hall mark geneset p-value heatmap
-Hall<-read.delim("../JA20150_combined/Hallmark/cells_hallmark.txt")
-pdf("Figures/hallmark_heatmap.pdf",height=15,width=6)
-#heatmap(log10(as.matrix(Hall[,2:7])),labRow = Hall$Hallmark,Colv = NA,keep.dendro=F,
-#        col = colorRampPalette(brewer.pal(10, "Spectral")))
-#dev.off()
-Col<-colorRampPalette(c(rev(brewer.pal(11, "RdYlBu")[3:8])))(50)
-
-#heatmap.2(log2(as.matrix(Hall[,2:7])),labRow = Hall$Hallmark,dendrogram = "none",scale="none",margins = c(10, 20),
-#          density.info = "none",trace="none",symm=F,symbreaks=F,keysize=1,Colv = F,symkey=F,
-#          col = rev(Col))
-heatmap.2(as.matrix(Hall[,2:5]),labRow = Hall$Hallmark,dendrogram = "none",scale="none",margins = c(10, 20),
-          density.info = "none",trace="none",symm=F,symbreaks=F,keysize=1,Colv = F,symkey=F,
-          col = rev(Col))
-dev.off()
-```
-```{r}
 dat<-read.delim("all.FLEXI")
 dat<-dat[,c(8,82:85)]
 dat<-dat[rowSums(dat[,2:5])>0,]
@@ -519,7 +502,7 @@ FLEXI_by_GID<-data.frame(aggregate(.~GID,data=dat,FUN=sum))
 rownames(FLEXI_by_GID)<-FLEXI_by_GID$GID
 FLEXI_by_GID$GID<-as.character(FLEXI_by_GID$GID)
 
-gene_counts<-read.delim("../JA20150_combined/combined_run.counts")
+gene_counts<-read.delim("combined_run.counts")
 dat<-gene_counts[,1:3]
 dat$BCH3<-rowSums(gene_counts[,c(10:12)])
 dat$BCH4<-rowSums(gene_counts[,c(7:9)])
@@ -536,7 +519,7 @@ rownames(dat)<-dat$ID
 dat$ID<-as.character(dat$ID)
 Unfrag_by_FLEXI<-merge(dat[,c(1,4:7)],FLEXI_by_GID[,1],by=1,all.y=T)
 Unfrag_by_FLEXI[is.na(Unfrag_by_FLEXI)]<-0
-Frag_by_FLEXI<-read.delim("../IBC/all_IBC.counts")
+Frag_by_FLEXI<-read.delim("all_IBC.counts")
 Frag_by_FLEXI<-Frag_by_FLEXI[,c(1:3,6:7,10:11)]
 rownames(Frag_by_FLEXI)<-Frag_by_FLEXI$ID
 Frag_by_FLEXI$ID<-as.character(Frag_by_FLEXI$ID)
