@@ -217,6 +217,19 @@ lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_agotron =="." & dat
 legend(0.8,5,lty=c(1,1,1),lwd=1.5,col=col[c(1,2,6)],legend = c("Agotron","Mirtron","Other"),bty="n")
 ```
 ```{r}
+#PhastCon30 density by w/o snoRNA
+pdf("Figures/Phastcons_by_snoRNA.pdf")
+plot(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Has_snoRNA !="." ,17]),bty="n",xlim=c(0,1),lwd=1.5,
+     ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Has_snoRNA == "." ,17]),lwd=1.5,col=col[6])
+legend(0.6,5,lty=c(1,1,1),lwd=1.5,col=col[c(1,6)],legend = c("Containing snoRNA","w/o snoRNA"),bty="n")
+dev.off()
+plot(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Has_snoRNA !="." ,17]),bty="n",xlim=c(0,1),lwd=1.5,
+     ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Has_snoRNA == "." ,17]),lwd=1.5,col=col[6])
+legend(0.6,5,lty=c(1,1,1),lwd=1.5,col=col[c(1,6)],legend = c("Containing snoRNA","w/o snoRNA"),bty="n")
+```
+```{r}
 #calculate CPM of combined dataset
 dat_CPM<-dat
 for (i in 88:92){
