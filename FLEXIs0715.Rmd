@@ -1,0 +1,668 @@
+---
+title: "FLEXIs"
+author: "Jun Yao"
+date: "7/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,self_contained=F)
+library(gplots)
+library(RColorBrewer)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(VennDiagram)
+library(stringi)
+library(matrixStats)
+library(ComplexHeatmap)
+library(tidyr)
+```
+
+## read data and calculate CPM
+
+```{r}
+dat<-read.delim("all.FLEXI")
+dat$AGO_CCR<-as.character(dat$AGO_CCR)
+dat$DICER_CCR<-as.character(dat$DICER_CCR)
+dat$RBP<-as.character(dat$RBP)
+mapped_reads<-c(305.069837,251.558067,268.210336,477.543790,207.491024,
+                692.091831,666.341854,713.775291,715.241521,768.433748,71.116246)
+GRCh38<-read.delim("../GRCh38.93.intron_deduped.tsv")
+# number of genes with FLEXIRs (≥1 reads)
+G_agg<-aggregate(.~GID,data=dat[,c(8,82:92)],FUN=function(x){sum(x[x>=1])})
+# number of FLEXIRs in individula dataset
+apply(dat[,26:81],MARGIN = 2,FUN=function(x){length(x[x>0])})
+```
+
+```{r}
+# number of FLEXIRs in combined dataset(≥1 reads)
+apply(dat[,82:92],MARGIN = 2,FUN=function(x){length(x[x>=1])})
+```
+```{r}
+# number of genes with FLEXIRs (≥1 reads)
+apply(G_agg[,2:12],MARGIN = 2,FUN=function(x){length(x[x>0])})
+```
+```{r}
+#CPM of all FLEXIRs (≥ 5 reads)
+apply(dat[,82:92],MARGIN = 2,FUN=function(x){sum(x[x>=1])})/mapped_reads
+```
+```{r}
+#mean/medain of all FLEXIRs
+apply(dat[,82:92],MARGIN = 2,FUN=function(x){median(x[x>=1])})/mapped_reads
+```
+```{r}
+#Max CPM of  FLEXIRs 
+apply(dat[,82:92],MARGIN = 2,FUN=max)/mapped_reads
+```
+```{r}
+#check agotron/mitron/a-m counts
+for (i in 82:92){
+  #cutoff: 1 or 5
+  cutoff=1
+  #Agotron (not mirtron)
+  print(c(colnames(dat)[i],dim(dat[dat[,i]>=cutoff & dat$Is_agotron=="+" & dat$Is_mirtron!="+",])[1]))
+  #Mirtron (not agotron)
+  #print(c(colnames(dat)[i],dim(dat[dat[,i]>=cutoff & dat$Is_agotron!="+" & dat$Is_mirtron=="+",])[1]))
+  #Agotron and mirtron
+  #print(c(colnames(dat)[i],dim(dat[dat[,i]>=cutoff & (dat$Is_agotron=="+" & dat$Is_mirtron=="+"),])[1]))
+}
+```
+```{r}
+#check GU-AG combination, all 85-89 combinations
+table(paste(substr(dat[rowMaxs(as.matrix(dat[,88:92]))>=cutoff,19],1,2),
+            stri_reverse(substr(stri_reverse(dat[rowMaxs(as.matrix(dat[,88:92]))>=cutoff,19]),1,2)),sep="-"))
+```
+```{r}
+#various cut off
+# 4 cell and plasma
+cut_off=1
+set_1 <- as.character(dat$ID[dat$UHRR>=cut_off])
+set_2 <- as.character(dat$ID[dat$K562>=cut_off])
+set_3 <- as.character(dat$ID[dat$HEK>=cut_off])
+set_4 <- as.character(dat$ID[dat$Hela>=cut_off])
+set_5 <- as.character(dat$ID[dat$Plasma>=cut_off])
+set <- list ("UHRR"=set_1,
+             "K-562"=set_2,"HEK 293T"=set_3,
+             "Hela S3"=set_4,"Plasma"=set_5)
+m = make_comb_mat(set)
+
+postscript(paste0("Figures/4cell_plasma_Upset.eps"),height=4,width=8)
+UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
+dev.off()
+
+UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
+```
+```{r}
+rev(comb_size(m))
+```
+```{r}
+set_size(m)
+```
+```{r}
+set_1 <- as.character(G_agg$GID[G_agg$UHRR>0])
+set_2 <- as.character(G_agg$GID[G_agg$K562>0])
+set_3 <- as.character(G_agg$GID[G_agg$HEK>0])
+set_4 <- as.character(G_agg$GID[G_agg$Hela>0])
+set_5 <- as.character(G_agg$GID[G_agg$Plasma>0])
+set <- list ("UHRR"=set_1,
+             "K-562"=set_2,"HEK 293T"=set_3,
+             "Hela S3"=set_4,"Plasma"=set_5)
+m = make_comb_mat(set)
+
+postscript(paste0("Figures/4cell_plasma_Upset_by_Gene.eps"),height=4,width=8)
+UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
+dev.off()
+
+UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
+```
+```{r}
+rev(comb_size(m))
+```
+```{r}
+set_size(m)
+```
+```{r}
+col=c("tomato","royalblue1","greenyellow","goldenrod","orchid","black")
+pdf(paste0("Figures/Venn_Ago_Mir.pdf"),width=18,height=12)
+#venn diagram of agotrons
+set_1 <- as.character(dat$ID[dat$UHRR>0 & dat$Is_agotron=="+"])
+set_2 <- as.character(dat$ID[dat$K562>0 & dat$Is_agotron=="+"])
+set_3 <- as.character(dat$ID[dat$HEK>0 & dat$Is_agotron=="+"])
+set_4 <- as.character(dat$ID[dat$Hela>0 & dat$Is_agotron=="+"])
+set_5 <- as.character(dat$ID[dat$Plasma>0 & dat$Is_agotron=="+"])
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
+vennplot1 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5], main="Agotrons",
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
+vennplot2 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:4], 
+                           fill = col[1:4],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=0,
+                           main.cex=1, cat.cex = 1) 
+#venn diagram of mirtrons
+set_1 <- as.character(dat$ID[dat$UHRR>0 & dat$Is_mirtron=="+"])
+set_2 <- as.character(dat$ID[dat$K562>0 & dat$Is_mirtron=="+"])
+set_3 <- as.character(dat$ID[dat$HEK>0 & dat$Is_mirtron=="+"])
+set_4 <- as.character(dat$ID[dat$Hela>0 & dat$Is_mirtron=="+"])
+set_5 <- as.character(dat$ID[dat$Plasma>0 & dat$Is_mirtron=="+"])
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
+vennplot3 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5], main="Mirtrons",
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
+vennplot4 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:4], 
+                           fill = col[1:4],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=0,
+                           main.cex=1, cat.cex = 1) 
+#venn diagram of ago/mirtrons
+set_1 <- as.character(dat$ID[dat$UHRR>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
+set_2 <- as.character(dat$ID[dat$K562>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
+set_3 <- as.character(dat$ID[dat$HEK>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
+set_4 <- as.character(dat$ID[dat$Hela>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
+set_5 <- as.character(dat$ID[dat$Plasma>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
+vennplot5 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5], main="Agotrons or Mirtrons",
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
+vennplot6 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:4], 
+                           fill = col[1:4],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=0,
+                           main.cex=1, cat.cex = 1) 
+ggarrange(vennplot1, vennplot3,vennplot5, vennplot2,vennplot4, vennplot6,nrow = 2,ncol=3)
+dev.off()
+#cleanup Veen log file
+unlink("*.log")
+```
+
+```{r}
+#calculate CPM of combined dataset
+dat_CPM<-dat
+for (i in 88:92){
+  dat_CPM[,i]<-dat_CPM[,i]/mapped_reads[i-81]
+}
+#minimal CPM in each dataset
+apply(dat_CPM[,88:92],MARGIN = 2,FUN=function(x){min(x[x>0])})
+
+#CPM density plot, Fig S1
+col=c("tomato","royalblue1","greenyellow","goldenrod","orchid","black")
+pdf("Figures/CPM.pdf")
+plot(density(dat_CPM$UHRR[dat_CPM$UHRR>0]),bty="n",xlim=c(0,1),lwd=1.5, ylim=c(0,200),main=NA,xlab="PPM",col=col[1])
+lines(density(dat_CPM$K562[dat_CPM$K562>0]),lwd=1.5,col=col[2])
+lines(density(dat_CPM$HEK[dat_CPM$HEK>0]),lwd=1.5,col=col[3])
+lines(density(dat_CPM$Hela[dat_CPM$Hela>0]),lwd=1.5,col=col[4])
+lines(density(dat_CPM$Plasma[dat_CPM$Plasma>0]),lwd=1.5,col=col[5])
+par(new = TRUE, fig=c(grconvertX(c(0.2, 0.8),from="user", to="npc"),
+                      grconvertY(c(50, 200),from="user", to="npc")))
+plot(density(dat_CPM$UHRR[dat_CPM$UHRR>0]),bty="n",xlim=c(0,0.03),lwd=1.5,
+     ylim=c(0,200),axes=F,col=col[1],xlab=NA,ylab=NA,main=NA)
+lines(density(dat_CPM$K562[dat_CPM$K562>0]),lwd=1.5,col=col[2])
+lines(density(dat_CPM$HEK[dat_CPM$HEK>0]),lwd=1.5,col=col[3])
+lines(density(dat_CPM$Hela[dat_CPM$Hela>0]),lwd=1.5,col=col[4])
+lines(density(dat_CPM$Plasma[dat_CPM$Plasma>0]),lwd=1.5,col=col[5])
+axis(2,labels=c(0,100,200),las=1,at=c(0,100,200),cex.axis=0.7)
+axis(1,labels=c(0,0.01,0.02,0.03),at=c(0,0.01,0.02,0.03),cex.axis=0.7)
+dev.off()
+
+plot(density(dat_CPM$UHRR[dat_CPM$UHRR>0]),bty="n",xlim=c(0,1),lwd=1.5, ylim=c(0,200),main=NA,xlab="CPM",col=col[1])
+lines(density(dat_CPM$K562[dat_CPM$K562>0]),lwd=1.5,col=col[2])
+lines(density(dat_CPM$HEK[dat_CPM$HEK>0]),lwd=1.5,col=col[3])
+lines(density(dat_CPM$Hela[dat_CPM$Hela>0]),lwd=1.5,col=col[4])
+lines(density(dat_CPM$Plasma[dat_CPM$Plasma>0]),lwd=1.5,col=col[5])
+par(new = TRUE, fig=c(grconvertX(c(0.2, 0.8),from="user", to="npc"),
+                      grconvertY(c(50, 200),from="user", to="npc")))
+plot(density(dat_CPM$UHRR[dat_CPM$UHRR>0]),bty="n",xlim=c(0,0.03),lwd=1.5,
+     ylim=c(0,200),axes=F,col=col[1],xlab=NA,ylab=NA,main=NA)
+lines(density(dat_CPM$K562[dat_CPM$K562>0]),lwd=1.5,col=col[2])
+lines(density(dat_CPM$HEK[dat_CPM$HEK>0]),lwd=1.5,col=col[3])
+lines(density(dat_CPM$Hela[dat_CPM$Hela>0]),lwd=1.5,col=col[4])
+lines(density(dat_CPM$Plasma[dat_CPM$Plasma>0]),lwd=1.5,col=col[5])
+axis(2,labels=c(0,100,200),las=1,at=c(0,100,200),cex.axis=0.7)
+axis(1,labels=c(0,0.01,0.02,0.03),at=c(0,0.01,0.02,0.03),cex.axis=0.7)
+```
+```{r}
+# CPM cut_off 0f 0.01 and Venn
+CPM_cut_off<-0.01
+for (i in 88:92){
+  if (i==88){
+    G_agg<-aggregate(dat_CPM[,i]~dat_CPM$GID,FUN=function(x){sum(x[x>=CPM_cut_off])})
+  } else {
+    temp<-aggregate(dat_CPM[,i]~dat_CPM$GID,FUN=function(x){sum(x[x>=CPM_cut_off])})
+    G_agg<-merge(G_agg,temp,by=1,all=T)
+  }
+}
+rm(temp)
+G_agg[is.na(G_agg)]<-0
+G_agg<-G_agg[rowSums(G_agg[,2:6])>0,]
+colnames(G_agg)<-c("GID",colnames(dat_CPM)[88:92])
+
+pdf(paste0("Figures/Venn_CPM_",CPM_cut_off,".pdf"),width=12,height=24)
+#venn diagram
+set_1 <- as.character(dat_CPM$ID[dat_CPM$UHRR>=CPM_cut_off])
+set_2 <- as.character(dat_CPM$ID[dat_CPM$K562>=CPM_cut_off])
+set_3 <- as.character(dat_CPM$ID[dat_CPM$HEK>=CPM_cut_off])
+set_4 <- as.character(dat_CPM$ID[dat_CPM$Hela>=CPM_cut_off])
+set_5 <- as.character(dat_CPM$ID[dat_CPM$Plasma>=CPM_cut_off])
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
+vennplot1 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," reads)"),
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
+vennplot2 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:4], 
+                           fill = col[1:4],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=0,
+                           main.cex=1, cat.cex = 1) 
+#group by GID
+set_1 <- as.character(G_agg$GID[G_agg$UHRR>0])
+set_2 <- as.character(G_agg$GID[G_agg$K562>0])
+set_3 <- as.character(G_agg$GID[G_agg$HEK>0])
+set_4 <- as.character(G_agg$GID[G_agg$Hela>0])
+set_5 <- as.character(G_agg$GID[G_agg$Plasma>0])
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
+vennplot3 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," reads) containing genes"),
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
+vennplot4 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:4], 
+                           fill = col[1:4],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=0,
+                           main.cex=1, cat.cex = 1) 
+#length
+if (CPM_cut_off==0.005){CPM_cut_off=0.0001}
+pdf(NULL)
+dev.control(displaylist="enable")
+plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,22]),bty="n",xlim=c(0,350),lwd=1.5,
+     ylim=c(0,0.04),main=NA,xlab="Intron length (bp)",col=col[1])
+lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[2])
+lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[3])
+lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[4])
+lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[5])
+lines(density(GRCh38$Len),xlim=c(0,350),lwd=1.5,col=col[6])
+legend(200,0.03,lty=c(1,1,1,1,1,1),lwd=1.5,col=col,legend = c("UHRR","K-562","HEK 293T","Hela S3","Plasma","GRCh38"),bty="n")
+length.line <- recordPlot()
+invisible(dev.off())
+
+#GC
+pdf(NULL)
+dev.control(displaylist="enable")
+plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,21]),bty="n",xlim=c(0,100),lwd=1.5,
+     ylim=c(0,0.08),main=NA,xlab="GC (%)",col=col[1])
+lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[2])
+lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[3])
+lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[4])
+lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[5])
+lines(density(GRCh38$GC),xlim=c(0,350),lwd=1.5,col=col[6])
+GC.line <- recordPlot()
+invisible(dev.off())
+
+#MEF
+pdf(NULL)
+dev.control(displaylist="enable")
+plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,20]),bty="n",xlim=c(-150,0),lwd=1.5,
+     ylim=c(0,0.05),main=NA,xlab="Minimal free energy (MFE; kcal/mol)",col=col[1])
+lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[2])
+lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[3])
+lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[4])
+lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[5])
+lines(density(GRCh38$MFE),xlim=c(-150,0),lwd=1.5,col=col[6])
+MFE.line <- recordPlot()
+invisible(dev.off())
+
+#PhastCons
+pdf(NULL)
+dev.control(displaylist="enable")
+plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,17]),bty="n",xlim=c(0,1),lwd=1.5,
+     ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
+lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,17]),lwd=1.5,col=col[2])
+lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,17]),lwd=1.5,col=col[3])
+lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,17]),lwd=1.5,col=col[4])
+lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,17]),lwd=1.5,col=col[5])
+lines(density(GRCh38$PhastCon30),lwd=1.5,col=col[6])
+PhastCons30.line <- recordPlot()
+invisible(dev.off())
+ggarrange(ggarrange(vennplot1, vennplot2,ncol=2),
+          ggarrange(vennplot3, vennplot4,ncol=2),
+          ggarrange(length.line,GC.line,ncol=2),
+          ggarrange(MFE.line,PhastCons30.line,ncol = 2),nrow = 4)
+dev.off()
+#cleanup Veen log file
+unlink("*.log")
+```
+```{r}
+ggarrange(vennplot1, vennplot2,ncol=2)
+```
+```{r}
+ggarrange(vennplot3, vennplot4,ncol=2)
+```
+```{r}
+ggarrange(length.line,GC.line,ncol=2)
+```
+```{r}
+ggarrange(MFE.line,PhastCons30.line,ncol = 2)
+```
+
+```{r}
+#hist_by counts, Fig. S1
+pdf("Figures/bar_by_counts.pdf")
+par(mfrow=c(3,2))
+barplot(100*prop.table(table(cut(dat$UHRR[dat$UHRR>0], c(0,1,2,3,4,5,10,100,max(dat$UHRR))))),
+        main="UHRR",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+barplot(100*prop.table(table(cut(dat$K562[dat$K562>0], c(0,1,2,3,4,5,10,100,max(dat$K562))))),
+        main="K-562",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+barplot(100*prop.table(table(cut(dat$HEK[dat$HEK>0], c(0,1,2,3,4,5,10,100,max(dat$HEK))))),
+        main="HEK 293T",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+barplot(100*prop.table(table(cut(dat$Hela[dat$Hela>0], c(0,1,2,3,4,5,10,100,max(dat$Hela))))),
+        main="Hela S3",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,100))
+barplot(100*prop.table(table(cut(dat$Plasma[dat$Plasma>0],c(0,1,2,3,4,5,10,100,max(dat$Plasma))))),
+        main="Plasma",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+dev.off()
+barplot(100*prop.table(table(cut(dat$UHRR[dat$UHRR>0], c(0,1,2,3,4,5,10,100,max(dat$UHRR))))),
+        main="UHRR",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+barplot(100*prop.table(table(cut(dat$K562[dat$K562>0], c(0,1,2,3,4,5,10,100,max(dat$K562))))),
+        main="K-562",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+barplot(100*prop.table(table(cut(dat$HEK[dat$HEK>0], c(0,1,2,3,4,5,10,100,max(dat$HEK))))),
+        main="HEK 293T",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+barplot(100*prop.table(table(cut(dat$Hela[dat$Hela>0], c(0,1,2,3,4,5,10,100,max(dat$Hela))))),
+        main="Hela S3",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,100))
+barplot(100*prop.table(table(cut(dat$Plasma[dat$Plasma>0],c(0,1,2,3,4,5,10,100,max(dat$Plasma))))),
+        main="Plasma",ylab="FLEXI RNAs (%)",xlab="Counts",ylim=c(0,50))
+```
+```{r}
+#RBP
+RBP<-read.delim("../JA20150_combined/150_RBP_AGO_DICER.info")
+Cell<-read.table("../JA20150_combined/4cell_plasma_RBP.counts",col.names=c("ID","Cells"))
+FLEXI<-read.table("../JA20150_combined/all_FLEXI_RBP.counts",col.names=c("ID","All_FLEXI"))
+Intron<-read.table("../JA20150_combined/all_intron_RBP.counts",col.names=c("ID","All_Intron"))
+Genome<-read.table("../JA20150_combined/GRCh38_RBP.counts",col.names=c("ID","GRCh38"))
+RBP<-merge(RBP,Cell,by=1,all=T)
+RBP<-merge(RBP,FLEXI,by=1,all=T)
+RBP<-merge(RBP,Intron,by=1,all=T)
+RBP<-merge(RBP,Genome,by=1,all=T)
+RBP[is.na(RBP)]<-0
+
+cut_off=1
+file_name=paste0("Figures/RBP_fun.pdf")
+pdf(file_name,height=16,width=8)
+par(mfrow=c(4,1))
+Fun<-data.frame("Cells"=apply(RBP[,4:22],2,FUN=function(x){sum(x*RBP$Cells)}),
+                "Intron"=apply(RBP[,4:22],2,FUN=function(x){sum(x*RBP$All_Intron)}),
+                "FLEXI"=apply(RBP[,4:22],2,FUN=function(x){sum(x*RBP$All_FLEXI)}),
+                "GRCh38"=apply(RBP[,4:22],2,FUN=function(x){sum(x*RBP$GRCh38)}))
+Fun<-Fun[order(Fun$Cells,decreasing = T),]
+Fun<-Fun[1:18,]
+Fun<-data.frame(100*prop.table(as.matrix(Fun),margin = 2))
+barplot(Fun$Cells,ylim=c(0,30),names.arg = rownames(Fun),las=2)
+barplot(Fun$FLEXI,ylim=c(0,30))
+barplot(Fun$Intron,ylim=c(0,30))
+barplot(Fun$GRCh38,ylim=c(0,30))
+dev.off()
+#RBP top15 in allFLEX ang whole genome
+pdf("Figures/RBP_top20_by_cell.pdf",height=16,width=8)
+Fun<-RBP[,c(1,46:49)]
+Fun<-cbind(Fun$RBP.name,data.frame(100*prop.table(as.matrix(Fun[,2:5]),margin = 2)))
+Fun<-Fun[order(Fun$Cells,decreasing = T),]
+barplot(Fun$Cells[1:20],ylim=c(0,20),names.arg =Fun$`Fun$RBP.name`[1:20],las=2)
+barplot(Fun$All_FLEXI[1:20],ylim=c(0,20))
+barplot(Fun$All_Intron[1:20],ylim=c(0,20))
+barplot(Fun$GRCh38[1:20],ylim=c(0,20))
+dev.off()
+
+pdf("Figures/RBP_top20_by_genome.pdf",height=16,width=8)
+Fun<-RBP[,c(1,46:49)]
+Fun<-cbind(Fun$RBP.name,data.frame(100*prop.table(as.matrix(Fun[,2:5]),margin = 2)))
+Fun<-Fun[order(Fun$GRCh38,decreasing = T),]
+barplot(Fun$Cells[1:20],ylim=c(0,20),names.arg =Fun$`Fun$RBP.name`[1:20],las=2)
+barplot(Fun$All_FLEXI[1:20],ylim=c(0,20))
+barplot(Fun$All_Intron[1:20],ylim=c(0,20))
+barplot(Fun$GRCh38[1:20],ylim=c(0,20))
+dev.off()
+#RBP name by function
+file_name=paste0("Figures/RBP_fun_name.pdf")
+column_pick=46
+pdf(file_name,height=12,width=8)
+par(mfrow=c(3,2))
+Com<-data.frame(RBP[,c(1,column_pick)])
+colnames(Com)[2]<-"Cells"
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:20,2],ylim=c(0,2000),names.arg = Com[1:20,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$Spliceosome==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,2000),names.arg = Com[1:10,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$Splicing.regulation==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,2000),names.arg = Com[1:10,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$Viral.RNA.regulation==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,1500),names.arg = Com[1:10,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$RNA.stability...decay==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,200),names.arg = Com[1:10,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$Translation.regulation==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,200),names.arg = Com[1:10,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$microRNA.processing==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,400),names.arg = Com[1:10,1],las=2,beside=F)
+dev.off()
+```
+```{r}
+#hall mark geneset p-value heatmap
+Hall<-read.delim("../JA20150_combined/Hallmark/cells_hallmark.txt")
+pdf("Figures/hallmark_heatmap.pdf",height=15,width=6)
+#heatmap(log10(as.matrix(Hall[,2:7])),labRow = Hall$Hallmark,Colv = NA,keep.dendro=F,
+#        col = colorRampPalette(brewer.pal(10, "Spectral")))
+#dev.off()
+Col<-colorRampPalette(c(rev(brewer.pal(11, "RdYlBu")[3:8])))(50)
+
+#heatmap.2(log2(as.matrix(Hall[,2:7])),labRow = Hall$Hallmark,dendrogram = "none",scale="none",margins = c(10, 20),
+#          density.info = "none",trace="none",symm=F,symbreaks=F,keysize=1,Colv = F,symkey=F,
+#          col = rev(Col))
+heatmap.2(as.matrix(Hall[,2:5]),labRow = Hall$Hallmark,dendrogram = "none",scale="none",margins = c(10, 20),
+          density.info = "none",trace="none",symm=F,symbreaks=F,keysize=1,Colv = F,symkey=F,
+          col = rev(Col))
+dev.off()
+```
+```{r}
+dat<-read.delim("all.FLEXI")
+dat<-dat[,c(8,82:85)]
+dat<-dat[rowSums(dat[,2:5])>0,]
+FLEXI_by_GID<-data.frame(aggregate(.~GID,data=dat,FUN=sum))
+rownames(FLEXI_by_GID)<-FLEXI_by_GID$GID
+FLEXI_by_GID$GID<-as.character(FLEXI_by_GID$GID)
+
+gene_counts<-read.delim("../JA20150_combined/combined_run.counts")
+dat<-gene_counts[,1:3]
+dat$BCH3<-rowSums(gene_counts[,c(10:12)])
+dat$BCH4<-rowSums(gene_counts[,c(7:9)])
+dat$BC3<-rowSums(gene_counts[,c(4:6)])
+dat$BC4<-rowSums(gene_counts[,c(13:15)])
+#dat$MDA<-rowSums(gene_counts[,c(16:17)])
+#dat$MCF<-rowSums(gene_counts[,c(18:25)])
+#dat$UHRR<-rowSums(gene_counts[,c(26:33)])
+#dat$K562<-rowSums(gene_counts[,c(34:41)])
+#dat$HEK<-rowSums(gene_counts[,c(42:49)])
+#dat$Hela<-rowSums(gene_counts[,c(50:59)])
+Unfrag_total<-colSums(dat[,4:7])/1e6
+rownames(dat)<-dat$ID
+dat$ID<-as.character(dat$ID)
+Unfrag_by_FLEXI<-merge(dat[,c(1,4:7)],FLEXI_by_GID[,1],by=1,all.y=T)
+Unfrag_by_FLEXI[is.na(Unfrag_by_FLEXI)]<-0
+Frag_by_FLEXI<-read.delim("../IBC/all_IBC.counts")
+Frag_by_FLEXI<-Frag_by_FLEXI[,c(1:3,6:7,10:11)]
+rownames(Frag_by_FLEXI)<-Frag_by_FLEXI$ID
+Frag_by_FLEXI$ID<-as.character(Frag_by_FLEXI$ID)
+Frag_total<-colSums(Frag_by_FLEXI[,4:7])/1e6
+Frag_by_FLEXI<-merge(Frag_by_FLEXI[,c(1,4:7)],FLEXI_by_GID[,1],by=1,all.y=T)
+Frag_by_FLEXI[is.na(Frag_by_FLEXI)]<-0
+
+FLEXI_by_GID[,2:5]<-t(t(FLEXI_by_GID[,2:5])/Unfrag_total)
+Unfrag_by_FLEXI[,2:5]<-t(t(Unfrag_by_FLEXI[,2:5])/Unfrag_total)
+Frag_by_FLEXI[,2:5]<-t(t(Frag_by_FLEXI[,2:5])/Frag_total)
+CPM_FLEXI<-merge(Unfrag_by_FLEXI,Frag_by_FLEXI,by=1)
+CPM_FLEXI<-merge(CPM_FLEXI,FLEXI_by_GID,by=1)
+colnames(CPM_FLEXI)<-c("ID","PatientA_H_UF","PatientB_H_UF","PatientA_C_UF","PatientB_C_UF",
+                       "PatientA_H_F","PatientB_H_F","PatientA_C_F","PatientB_C_F",
+                       "PatientA_H_FLEXI","PatientB_H_FLEXI","PatientA_C_FLEXI","PatientB_C_FLEXI")
+#assign zero value to the lowest CPM, here it's 0.001 or 2^-10
+# it can be evaluated by " min(apply(CPM_FLEXI[,2:13],MARGIN = 2,FUN=function(x){min(x[x>0])})) "
+CPM_FLEXI[CPM_FLEXI==0]<-2^-10
+
+dat<-read.delim("all.FLEXI")
+dat<-dat[,c(1,32:34,29:31,26:28,35:37,38:47)]
+dat<-dat[rowSums(dat[,2:23])>0,]
+dat$BCH3_repro<-rowMedians(as.matrix(dat[,2:4]))>0
+dat$BCH4_repro<-rowMedians(as.matrix(dat[,5:7]))>0
+dat$BC3_repro<-rowMedians(as.matrix(dat[,8:10]))>0
+dat$BC4_repro<-rowMedians(as.matrix(dat[,11:13]))>0
+dat$MDA_repro<-rowMins(as.matrix(dat[,14:15]))>0
+dat$MCF_repro<-apply(dat[,16:23],MARGIN = 1,FUN=function(x){sort(x)[5]>0})
+
+dat$PatientA_H<-rowSums(dat[,c(2:4)])
+dat$PatientB_H<-rowSums(dat[,c(5:7)])
+dat$PatientA_C<-rowSums(dat[,c(8:10)])
+dat$PatientB_C<-rowSums(dat[,c(11:13)])
+dat$MDA<-rowSums(dat[,c(14:15)])
+dat$MCF<-rowSums(dat[,c(16:23)])
+Unfrag_total<-c(305.069837,251.558067,268.210336,477.543790,207.491024,692.091831)
+dat[,30:35]<-t(t(dat[,30:35])/Unfrag_total)
+dat1<-dat[,30:35]
+dat1[dat1==0]<-2^-10
+dat[,30:35]<-dat1
+dat$Combined_H<-rowMeans(dat[,30:31])
+dat$Combined_H_repo<-dat$BCH3_repro | dat$BCH4_repro
+dat<-dat[,c(1,37,26:29,36,30:35)]
+dat$ID<-as.character(dat$ID)
+dat<-separate(dat,ID,into=c("IID","GID"),sep = "___",remove = F,extra="drop")
+dat<-separate(dat,IID,into=c("Intron","GName"),sep = "_",remove = T,extra="drop")
+colnames(dat)[6:7]<-c("PatientA_C_repro","PatientB_C_repo")
+
+postscript("Figures/H_Vs_C.eps",width = 15,height=10,horizontal = F)
+par(pch=16,mfrow=c(2,3),pty="s")
+plot(log2(CPM_FLEXI[,c(2,4)]),xlim=c(-10,15),ylim=c(-10,15))
+abline(0,1,col="red")
+cor_s=formatC(cor(CPM_FLEXI[,2],CPM_FLEXI[,4],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(CPM_FLEXI[,2],CPM_FLEXI[,4],method = "pearson"),digits=2, format="f")
+text(-5,10,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+plot(log2(CPM_FLEXI[,c(6,8)]),xlim=c(-10,15),ylim=c(-10,15))
+abline(0,1,col="red")
+cor_s=formatC(cor(CPM_FLEXI[,6],CPM_FLEXI[,8],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(CPM_FLEXI[,6],CPM_FLEXI[,8],method = "pearson"),digits=2, format="f")
+text(-5,10,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+text(log2(CPM_FLEXI[1942,c(6,8)])+1,"CYP2B7P")
+
+plot(log2(dat[,c(11,13)]),xlim=c(-10,5),ylim=c(-10,5),col="gray50")
+abline(0,1,col="red")
+cor_s=formatC(cor(dat[,11],dat[,13],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(dat[,11],dat[,13],method = "pearson"),digits=2, format="f")
+text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+points(log2(dat[dat$PatientA_H==2^-10 & dat$PatientA_C>=0.01 & dat$PatientA_C_repro,c(11,13)]),col="red")
+legend(-2,-7,col = c("red"),pch=16,legend = c("Cancer only"),bty="n")
+
+plot(log2(CPM_FLEXI[,c(3,5)]),xlim=c(-10,15),ylim=c(-10,15))
+abline(0,1,col="red")
+cor_s=formatC(cor(CPM_FLEXI[,3],CPM_FLEXI[,5],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(CPM_FLEXI[,3],CPM_FLEXI[,5],method = "pearson"),digits=2, format="f")
+text(-5,10,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+plot(log2(CPM_FLEXI[,c(7,9)]),xlim=c(-10,15),ylim=c(-10,15))
+abline(0,1,col="red")
+cor_s=formatC(cor(CPM_FLEXI[,7],CPM_FLEXI[,9],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(CPM_FLEXI[,7],CPM_FLEXI[,9],method = "pearson"),digits=2, format="f")
+text(-5,10,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+plot(log2(dat[,c(12,14)]),xlim=c(-10,5),ylim=c(-10,5),col="gray50")
+abline(0,1,col="red")
+cor_s=formatC(cor(dat[,12],dat[,14],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(dat[,12],dat[,14],method = "pearson"),digits=2, format="f")
+text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+points(log2(dat[dat$PatientB_H==2^-10 & dat$PatientB_C>=0.01 & dat$PatientB_C_repo,c(12,14)]),col="red")
+dev.off()
+```
+```{r}
+#Upset plot
+cut_off=0.01
+dat<-read.delim("all.FLEXI")
+dat<-dat[,c(1,8,82:87)]
+dat<-dat[rowSums(dat[,3:8])>0,]
+Unfrag_total<-c(305.069837,251.558067,268.210336,477.543790,207.491024,692.091831)
+dat[,3:8]<-t(t(dat[,3:8])/Unfrag_total)
+G_agg<-aggregate(.~GID,data=dat[,2:8],FUN=function(x){sum(x[x>=cut_off])})
+
+postscript(paste0("Figures/BC_cell_Upset_",cut_off,".eps"),height=4,width=8)
+set_1 <- as.character(dat$ID[(dat$BCH3+dat$BCH4)>=cut_off])
+set_3 <- as.character(dat$ID[dat$BC3>=cut_off])
+set_4 <- as.character(dat$ID[dat$BC4>=cut_off])
+set_5 <- as.character(dat$ID[dat$MDA>=cut_off])
+set_6 <- as.character(dat$ID[dat$MCF7>=cut_off])
+set <- list ("Healthy (Combined)"=set_1,
+             "Patient A (Cancer)"=set_3,"Patient B (Cancer)"=set_4,
+             "MDA-MB-231"=set_5,"MCF7"=set_6)
+m = make_comb_mat(set)
+UpSet(m,set_order=c("MDA-MB-231","MCF7","Patient A (Cancer)",
+                    "Patient B (Cancer)","Healthy (Combined)"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)],
+      comb_order=c(30,24,25,22,23,15:10,5:2,31,29:26,21:16,9:6,1))
+dev.off()
+
+postscript(paste0("Figures/BC_cell_Upset_by_Gene_",cut_off,".eps"),height=4,width=8)
+set_1 <- as.character(G_agg$GID[(G_agg$BCH4+G_agg$BCH3)>0])
+set_3 <- as.character(G_agg$GID[G_agg$BC3>0])
+set_4 <- as.character(G_agg$GID[G_agg$BC4>0])
+set_5 <- as.character(G_agg$GID[G_agg$MDA>0])
+set_6 <- as.character(G_agg$GID[G_agg$MCF7>0])
+
+set <- list ("Healthy (Combined)"=set_1,
+             "Patient A (Cancer)"=set_3,"Patient B (Cancer)"=set_4,
+             "MDA-MB-231"=set_5,"MCF7"=set_6)
+m = make_comb_mat(set)
+UpSet(m,set_order=c("MDA-MB-231","MCF7","Patient A (Cancer)",
+                    "Patient B (Cancer)","Healthy (Combined)"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)],
+      comb_order=c(30,24,25,22,23,15:10,5:2,31,29:26,21:16,9:6,1))
+dev.off()
+```
