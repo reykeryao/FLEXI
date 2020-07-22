@@ -11,7 +11,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,self_contained=F)
+knitr::opts_chunk$set(echo = TRUE,self_contained=F,warning=F)
 library(gplots)
 library(RColorBrewer)
 library(dplyr)
@@ -134,15 +134,15 @@ set_size(m)
 ```{r}
 col=c("tomato","royalblue1","greenyellow","goldenrod","orchid","black")
 pdf(paste0("Figures/Venn_Ago_Mir.pdf"),width=18,height=12)
-#venn diagram of agotrons
-set_1 <- as.character(dat$ID[dat$UHRR>0 & dat$Is_agotron=="+"])
-set_2 <- as.character(dat$ID[dat$K562>0 & dat$Is_agotron=="+"])
-set_3 <- as.character(dat$ID[dat$HEK>0 & dat$Is_agotron=="+"])
-set_4 <- as.character(dat$ID[dat$Hela>0 & dat$Is_agotron=="+"])
-set_5 <- as.character(dat$ID[dat$Plasma>0 & dat$Is_agotron=="+"])
+#venn diagram of mirtrons (including agotron)
+set_1 <- as.character(dat$ID[dat$UHRR>0 & dat$Is_mirtron=="+"])
+set_2 <- as.character(dat$ID[dat$K562>0 & dat$Is_mirtron=="+"])
+set_3 <- as.character(dat$ID[dat$HEK>0 & dat$Is_mirtron=="+"])
+set_4 <- as.character(dat$ID[dat$Hela>0 & dat$Is_mirtron=="+"])
+set_5 <- as.character(dat$ID[dat$Plasma>0 & dat$Is_mirtron=="+"])
 set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
 vennplot1 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:5], main="Agotrons",
+                           cat.col = col[1:5], main="Mirtrons",
                            fill = col[1:5],
                            height = 300, width = 300, units = "px",
                            cex = 1,cat.pos=c(0,0,180,180,0),
@@ -154,15 +154,16 @@ vennplot2 <- venn.diagram (set, filename=NULL,category.names=names(set),
                            height = 300, width = 300, units = "px",
                            cex = 1,cat.pos=0,
                            main.cex=1, cat.cex = 1) 
-#venn diagram of mirtrons
-set_1 <- as.character(dat$ID[dat$UHRR>0 & dat$Is_mirtron=="+"])
-set_2 <- as.character(dat$ID[dat$K562>0 & dat$Is_mirtron=="+"])
-set_3 <- as.character(dat$ID[dat$HEK>0 & dat$Is_mirtron=="+"])
-set_4 <- as.character(dat$ID[dat$Hela>0 & dat$Is_mirtron=="+"])
-set_5 <- as.character(dat$ID[dat$Plasma>0 & dat$Is_mirtron=="+"])
+
+#venn diagram of agotrons (including mirtron)
+set_1 <- as.character(dat$ID[dat$UHRR>0 & dat$Is_agotron=="+"])
+set_2 <- as.character(dat$ID[dat$K562>0 & dat$Is_agotron=="+"])
+set_3 <- as.character(dat$ID[dat$HEK>0 & dat$Is_agotron=="+"])
+set_4 <- as.character(dat$ID[dat$Hela>0 & dat$Is_agotron=="+"])
+set_5 <- as.character(dat$ID[dat$Plasma>0 & dat$Is_agotron=="+"])
 set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
 vennplot3 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:5], main="Mirtrons",
+                           cat.col = col[1:5], main="Agotrons",
                            fill = col[1:5],
                            height = 300, width = 300, units = "px",
                            cex = 1,cat.pos=c(0,0,180,180,0),
@@ -174,6 +175,7 @@ vennplot4 <- venn.diagram (set, filename=NULL,category.names=names(set),
                            height = 300, width = 300, units = "px",
                            cex = 1,cat.pos=0,
                            main.cex=1, cat.cex = 1) 
+
 #venn diagram of ago/mirtrons
 set_1 <- as.character(dat$ID[dat$UHRR>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
 set_2 <- as.character(dat$ID[dat$K562>0 & (dat$Is_mirtron=="+" | dat$Is_agotron=="+") ])
@@ -199,7 +201,21 @@ dev.off()
 #cleanup Veen log file
 unlink("*.log")
 ```
-
+```{r}
+#PhastCon30 density by Agotron/Mirtron
+pdf("Figures/Phastcons_by_Ago_Mir.pdf")
+plot(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_agotron =="+" ,17]),bty="n",xlim=c(0,1),lwd=1.5,
+     ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_mirtron =="+" ,17]),lwd=1.5,col=col[2])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_agotron =="." & dat$Is_mirtron ==".",17]),lwd=1.5,col=col[6])
+legend(0.8,5,lty=c(1,1,1),lwd=1.5,col=col[c(1,2,6)],legend = c("Agotron","Mirtron","Other"),bty="n")
+dev.off()
+plot(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_agotron =="+" ,17]),bty="n",xlim=c(0,1),lwd=1.5,
+     ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_mirtron =="+" ,17]),lwd=1.5,col=col[2])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_agotron =="." & dat$Is_mirtron ==".",17]),lwd=1.5,col=col[6])
+legend(0.8,5,lty=c(1,1,1),lwd=1.5,col=col[c(1,2,6)],legend = c("Agotron","Mirtron","Other"),bty="n")
+```
 ```{r}
 #calculate CPM of combined dataset
 dat_CPM<-dat
@@ -270,7 +286,7 @@ set_4 <- as.character(dat_CPM$ID[dat_CPM$Hela>=CPM_cut_off])
 set_5 <- as.character(dat_CPM$ID[dat_CPM$Plasma>=CPM_cut_off])
 set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
 vennplot1 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," reads)"),
+                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," RPM)"),
                            fill = col[1:5],
                            height = 300, width = 300, units = "px",
                            cex = 1,cat.pos=c(0,0,180,180,0),
@@ -290,7 +306,7 @@ set_4 <- as.character(G_agg$GID[G_agg$Hela>0])
 set_5 <- as.character(G_agg$GID[G_agg$Plasma>0])
 set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
 vennplot3 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," reads) containing genes"),
+                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," RPM) containing genes"),
                            fill = col[1:5],
                            height = 300, width = 300, units = "px",
                            cex = 1,cat.pos=c(0,0,180,180,0),
@@ -314,7 +330,7 @@ lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=co
 lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[4])
 lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[5])
 lines(density(GRCh38$Len),xlim=c(0,350),lwd=1.5,col=col[6])
-legend(200,0.03,lty=c(1,1,1,1,1,1),lwd=1.5,col=col,legend = c("UHRR","K-562","HEK 293T","Hela S3","Plasma","GRCh38"),bty="n")
+legend(200,0.03,lty=c(1,1,1,1,1,1),lwd=1.5,col=col,legend = c("UHRR","K-562","HEK-293T","Hela S3","Plasma","GRCh38"),bty="n")
 length.line <- recordPlot()
 invisible(dev.off())
 
@@ -364,16 +380,17 @@ dev.off()
 #cleanup Veen log file
 unlink("*.log")
 ```
-```{r}
+
+```{r, fig.height=2, fig.width=4}
 ggarrange(vennplot1, vennplot2,ncol=2)
 ```
-```{r}
+```{r, fig.height=6,fig.width=12}
 ggarrange(vennplot3, vennplot4,ncol=2)
 ```
-```{r}
+```{r, fig.height=6,fig.width=12}
 ggarrange(length.line,GC.line,ncol=2)
 ```
-```{r}
+```{r, fig.height=6,fig.width=12}
 ggarrange(MFE.line,PhastCons30.line,ncol = 2)
 ```
 
@@ -492,6 +509,11 @@ Com<-data.frame(RBP[RBP$microRNA.processing==1,c(1,column_pick)])
 Com<-Com[order(Com$Cells,decreasing = T),]
 Com[,1]<-as.character(Com[,1])
 barplot(Com[1:10,2],ylim=c(0,400),names.arg = Com[1:10,1],las=2,beside=F)
+
+Com<-data.frame(RBP[RBP$snoRNA...snRNA...telomerase==1,c(1,column_pick)])
+Com<-Com[order(Com$Cells,decreasing = T),]
+Com[,1]<-as.character(Com[,1])
+barplot(Com[1:10,2],ylim=c(0,1500),names.arg = Com[1:10,1],las=2,beside=F)
 dev.off()
 ```
 ```{r}
