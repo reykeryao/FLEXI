@@ -703,3 +703,8 @@ UpSet(m,set_order=c("MDA-MB-231","MCF7","Patient A (Cancer)",
       comb_order=c(30,24,25,22,23,15:10,5:2,31,29:26,21:16,9:6,1))
 dev.off()
 ```
+```{R}
+#list of FLEXIs (cancer specific), reproducible check
+BC<-read.delim("CPM_reproducible_combiend.tsv")
+
+```
