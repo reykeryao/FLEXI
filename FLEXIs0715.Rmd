@@ -79,6 +79,20 @@ table(paste(substr(dat[rowMaxs(as.matrix(dat[,88:92]))>=cutoff,19],1,2),
             stri_reverse(substr(stri_reverse(dat[rowMaxs(as.matrix(dat[,88:92]))>=cutoff,19]),1,2)),sep="-"))
 ```
 ```{r}
+#is FLEXI equally distributed in genes
+Intron_per_gene<-data.frame(table(GRCh38$GID))
+FLEXI_per_gene<-data.frame(table(dat$GID))
+pdf("Figures/Density_per_gene.pdf")
+plot(density(Intron_per_gene$Freq),xlim=c(0,10),ylim=c(0,1),bty="n",main=NA,xlab="Occurances per gene")
+lines(density(FLEXI_per_gene$Freq),xlim=c(1,10),col="red")
+legend(0,1.0,bty="n",legend = c("All short introns (51,645 introns in 12,020 genes)", "All FLEXIs (8,687 FLEXIs in 3,923 genes)"),col=c("black","red"),lty=c(1,1))
+dev.off()
+plot(density(Intron_per_gene$Freq),xlim=c(0,10),ylim=c(0,1),bty="n",main=NA,xlab="Occurances per gene")
+lines(density(FLEXI_per_gene$Freq),xlim=c(1,10),col="red")
+legend(0,1.0,bty="n",legend = c("All short introns (51,645 introns in 12,020 genes)", "All FLEXIs (8,687 FLEXIs in 3,923 genes)"),col=c("black","red"),lty=c(1,1))
+```
+
+```{r}
 #various cut off
 # 4 cell and plasma
 cut_off=1
