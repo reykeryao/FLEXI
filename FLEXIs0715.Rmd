@@ -568,9 +568,7 @@ rownames(dat)<-dat$ID
 dat$ID<-as.character(dat$ID)
 Unfrag_by_FLEXI<-merge(dat[,c(1,4:7)],FLEXI_by_GID[,1],by=1,all.y=T)
 Unfrag_by_FLEXI[is.na(Unfrag_by_FLEXI)]<-0
-Frag_by_FLEXI<-read.delim("all_IBC.counts")
-Frag_by_FLEXI<-Frag_by_FLEXI[,c(1:3,6:7,10:11)]
-rownames(Frag_by_FLEXI)<-Frag_by_FLEXI$ID
+Frag_by_FLEXI<-read.delim("IBC_frag.counts")
 Frag_by_FLEXI$ID<-as.character(Frag_by_FLEXI$ID)
 Frag_total<-colSums(Frag_by_FLEXI[,4:7])/1e6
 Frag_by_FLEXI<-merge(Frag_by_FLEXI[,c(1,4:7)],FLEXI_by_GID[,1],by=1,all.y=T)
