@@ -91,7 +91,61 @@ plot(density(Intron_per_gene$Freq),xlim=c(0,10),ylim=c(0,1),bty="n",main=NA,xlab
 lines(density(FLEXI_per_gene$Freq),xlim=c(1,10),col="red")
 legend(0,1.0,bty="n",legend = c("All short introns (51,645 introns in 12,020 genes)", "All FLEXIs (8,687 FLEXIs in 3,923 genes)"),col=c("black","red"),lty=c(1,1))
 ```
+```{r}
+#scatter plots of FLEXIs
 
+FLEXI_CPM<-read.delim("all.FLEXI")
+FLEXI_CPM<-FLEXI_CPM[,c(8,88:91)]
+Unfrag_total<-c(666.341854,713.775291,715.241521,768.433748)
+FLEXI_CPM[,2:5]<-t(t(FLEXI_CPM[,2:5])/Unfrag_total)
+FLEXI_CPM[FLEXI_CPM==0]<-2^-10
+
+postscript("Figures/4cells.eps",width = 15,height=10,horizontal = F)
+par(pch=16,mfrow=c(2,3),pty="s")
+
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,3]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,3)]),xlim=c(-10,10),ylim=c(-10,10))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
+text(-5,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,4)]),xlim=c(-10,10),ylim=c(-10,10))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(-5,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,5]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,5)]),xlim=c(-10,10),ylim=c(-10,10))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,5],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,5],method = "pearson"),digits=2, format="f")
+text(-5,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,3]==2^-10 & FLEXI_CPM[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(3,4)]),xlim=c(-10,10),ylim=c(-10,10))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(-5,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,3]==2^-10 & FLEXI_CPM[,5]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(3,5)]),xlim=c(-10,10),ylim=c(-10,10))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,5],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,5],method = "pearson"),digits=2, format="f")
+text(-5,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,4]==2^-10 & FLEXI_CPM[,5]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(4,5)]),xlim=c(-10,10),ylim=c(-10,10))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,4],FLEXI_by_GID[,5],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,4],FLEXI_by_GID[,5],method = "pearson"),digits=2, format="f")
+text(-5,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+dev.off()
+```
 ```{r}
 #various cut off
 # 4 cell and plasma
