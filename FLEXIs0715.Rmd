@@ -11,6 +11,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+rm(list=ls())
 knitr::opts_chunk$set(echo = TRUE,self_contained=F,warning=F)
 library(gplots)
 library(RColorBrewer)
@@ -49,7 +50,7 @@ apply(dat[,82:92],MARGIN = 2,FUN=function(x){length(x[x>=1])})
 apply(G_agg[,2:12],MARGIN = 2,FUN=function(x){length(x[x>0])})
 ```
 ```{r}
-#CPM of all FLEXIRs (≥ 5 reads)
+#CPM of all FLEXIRs (≥ 1 reads)
 apply(dat[,82:92],MARGIN = 2,FUN=function(x){sum(x[x>=1])})/mapped_reads
 ```
 ```{r}
@@ -75,9 +76,30 @@ for (i in 82:92){
 ```
 ```{r}
 #check GU-AG combination, all 85-89 combinations
+cutoff=1
 table(paste(substr(dat[rowMaxs(as.matrix(dat[,88:92]))>=cutoff,19],1,2),
             stri_reverse(substr(stri_reverse(dat[rowMaxs(as.matrix(dat[,88:92]))>=cutoff,19]),1,2)),sep="-"))
 ```
+```{r}
+# number of FLEXIs has RBP site or AGO_CCR site or DICER_CCR site in 4cells+plasma
+dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & (dat$RBP!="." | dat$AGO_CCR!="." | dat$DICER_CCR!="."),])
+#number of differebt RBPs detecetd (including AGO1-4(treated as one) and DICER),so the number should be
+# the out put of the following command -1 (the ".") +2 (AGO1-4 and DICER)
+length(lapply(strsplit(paste(dat$RBP,collapse = ","), ","), unique)[[1]])-1+2
+#Number of AGO_CCR (FLEXIs), DICER_CCR, and agotrpn/mirtron in them
+dim(dat[dat$AGO_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>0,])
+dim(dat[dat$AGO_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_agotron!=".",])
+dim(dat[dat$DICER_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>0,])
+dim(dat[dat$DICER_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Is_mirtron!=".",])
+dim(dat[dat$DICER_CCR!="." & dat$AGO_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>0,])
+dim(dat[dat$DICER_CCR!="." & dat$AGO_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>0 &
+          dat$Is_mirtron!="." & dat$Is_agotron!=".",])
+#number of FLEXIs with high/low (0.5) PhastCons30 score
+dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$PhastCon30>=0.5,])
+dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$PhastCon30<0.5,])
+dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & round(dat$PhastCon30,2)==1,])
+```
+
 ```{r}
 #is FLEXI equally distributed in genes
 Intron_per_gene<-data.frame(table(GRCh38$GID))
