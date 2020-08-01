@@ -365,73 +365,18 @@ axis(2,labels=c(0,100,200),las=1,at=c(0,100,200),cex.axis=0.7)
 axis(1,labels=c(0,0.01,0.02,0.03),at=c(0,0.01,0.02,0.03),cex.axis=0.7)
 ```
 ```{r}
-# CPM cut_off 0f 0.01 and Venn
-CPM_cut_off<-0.01
-for (i in 88:92){
-  if (i==88){
-    G_agg<-aggregate(dat_CPM[,i]~dat_CPM$GID,FUN=function(x){sum(x[x>=CPM_cut_off])})
-  } else {
-    temp<-aggregate(dat_CPM[,i]~dat_CPM$GID,FUN=function(x){sum(x[x>=CPM_cut_off])})
-    G_agg<-merge(G_agg,temp,by=1,all=T)
-  }
-}
-rm(temp)
-G_agg[is.na(G_agg)]<-0
-G_agg<-G_agg[rowSums(G_agg[,2:6])>0,]
-colnames(G_agg)<-c("GID",colnames(dat_CPM)[88:92])
+# Density of length/GC/MFE/PhastCons, reads>=1
 
-pdf(paste0("Figures/Venn_CPM_",CPM_cut_off,".pdf"),width=12,height=24)
-#venn diagram
-set_1 <- as.character(dat_CPM$ID[dat_CPM$UHRR>=CPM_cut_off])
-set_2 <- as.character(dat_CPM$ID[dat_CPM$K562>=CPM_cut_off])
-set_3 <- as.character(dat_CPM$ID[dat_CPM$HEK>=CPM_cut_off])
-set_4 <- as.character(dat_CPM$ID[dat_CPM$Hela>=CPM_cut_off])
-set_5 <- as.character(dat_CPM$ID[dat_CPM$Plasma>=CPM_cut_off])
-set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
-vennplot1 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," RPM)"),
-                           fill = col[1:5],
-                           height = 300, width = 300, units = "px",
-                           cex = 1,cat.pos=c(0,0,180,180,0),
-                           main.cex=1, cat.cex = 1) 
-set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
-vennplot2 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:4], 
-                           fill = col[1:4],
-                           height = 300, width = 300, units = "px",
-                           cex = 1,cat.pos=0,
-                           main.cex=1, cat.cex = 1) 
-#group by GID
-set_1 <- as.character(G_agg$GID[G_agg$UHRR>0])
-set_2 <- as.character(G_agg$GID[G_agg$K562>0])
-set_3 <- as.character(G_agg$GID[G_agg$HEK>0])
-set_4 <- as.character(G_agg$GID[G_agg$Hela>0])
-set_5 <- as.character(G_agg$GID[G_agg$Plasma>0])
-set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
-vennplot3 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:5], main=paste0("FLEXI RNAs (>= ",CPM_cut_off," RPM) containing genes"),
-                           fill = col[1:5],
-                           height = 300, width = 300, units = "px",
-                           cex = 1,cat.pos=c(0,0,180,180,0),
-                           main.cex=1, cat.cex = 1) 
-
-set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4)
-vennplot4 <- venn.diagram (set, filename=NULL,category.names=names(set),
-                           cat.col = col[1:4], 
-                           fill = col[1:4],
-                           height = 300, width = 300, units = "px",
-                           cex = 1,cat.pos=0,
-                           main.cex=1, cat.cex = 1) 
+pdf("Figures/Density_plots.pdf",width=12,height=12)
 #length
-if (CPM_cut_off==0.005){CPM_cut_off=0.0001}
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,22]),bty="n",xlim=c(0,350),lwd=1.5,
+plot(density(dat[dat$UHRR>=1,22]),bty="n",xlim=c(0,350),lwd=1.5,
      ylim=c(0,0.04),main=NA,xlab="Intron length (bp)",col=col[1])
-lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[2])
-lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[3])
-lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[4])
-lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,22]),xlim=c(0,350),lwd=1.5,col=col[5])
+lines(density(dat[dat$K562>=1,22]),xlim=c(0,350),lwd=1.5,col=col[2])
+lines(density(dat[dat$HEK>=1,22]),xlim=c(0,350),lwd=1.5,col=col[3])
+lines(density(dat[dat$Hela>=1,22]),xlim=c(0,350),lwd=1.5,col=col[4])
+lines(density(dat[dat$Plasma>=1,22]),xlim=c(0,350),lwd=1.5,col=col[5])
 lines(density(GRCh38$Len),xlim=c(0,350),lwd=1.5,col=col[6])
 legend(200,0.03,lty=c(1,1,1,1,1,1),lwd=1.5,col=col,legend = c("UHRR","K-562","HEK-293T","Hela S3","Plasma","GRCh38"),bty="n")
 length.line <- recordPlot()
@@ -440,12 +385,12 @@ invisible(dev.off())
 #GC
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,21]),bty="n",xlim=c(0,100),lwd=1.5,
+plot(density(dat[dat$UHRR>=1,21]),bty="n",xlim=c(0,100),lwd=1.5,
      ylim=c(0,0.08),main=NA,xlab="GC (%)",col=col[1])
-lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[2])
-lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[3])
-lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[4])
-lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,21]),xlim=c(0,350),lwd=1.5,col=col[5])
+lines(density(dat[dat$K562>=1,21]),xlim=c(0,350),lwd=1.5,col=col[2])
+lines(density(dat[dat$HEK>=1,21]),xlim=c(0,350),lwd=1.5,col=col[3])
+lines(density(dat[dat$Hela>=1,21]),xlim=c(0,350),lwd=1.5,col=col[4])
+lines(density(dat[dat$Plasma>=1,21]),xlim=c(0,350),lwd=1.5,col=col[5])
 lines(density(GRCh38$GC),xlim=c(0,350),lwd=1.5,col=col[6])
 GC.line <- recordPlot()
 invisible(dev.off())
@@ -453,12 +398,12 @@ invisible(dev.off())
 #MEF
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,20]),bty="n",xlim=c(-150,0),lwd=1.5,
+plot(density(dat[dat$UHRR>=1,20]),bty="n",xlim=c(-150,0),lwd=1.5,
      ylim=c(0,0.05),main=NA,xlab="Minimal free energy (MFE; kcal/mol)",col=col[1])
-lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[2])
-lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[3])
-lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[4])
-lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,20]),xlim=c(-150,0),lwd=1.5,col=col[5])
+lines(density(dat[dat$K562>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[2])
+lines(density(dat[dat$HEK>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[3])
+lines(density(dat[dat$Hela>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[4])
+lines(density(dat[dat$Plasma>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[5])
 lines(density(GRCh38$MFE),xlim=c(-150,0),lwd=1.5,col=col[6])
 MFE.line <- recordPlot()
 invisible(dev.off())
@@ -466,29 +411,19 @@ invisible(dev.off())
 #PhastCons
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat_CPM[dat_CPM$UHRR>=CPM_cut_off,17]),bty="n",xlim=c(0,1),lwd=1.5,
+plot(density(dat[dat$UHRR>=1,17]),bty="n",xlim=c(0,1),lwd=1.5,
      ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
-lines(density(dat_CPM[dat_CPM$K562>=CPM_cut_off,17]),lwd=1.5,col=col[2])
-lines(density(dat_CPM[dat_CPM$HEK>=CPM_cut_off,17]),lwd=1.5,col=col[3])
-lines(density(dat_CPM[dat_CPM$Hela>=CPM_cut_off,17]),lwd=1.5,col=col[4])
-lines(density(dat_CPM[dat_CPM$Plasma>=CPM_cut_off,17]),lwd=1.5,col=col[5])
+lines(density(dat[dat$K562>=1,17]),lwd=1.5,col=col[2])
+lines(density(dat[dat$HEK>=1,17]),lwd=1.5,col=col[3])
+lines(density(dat[dat$Hela>=1,17]),lwd=1.5,col=col[4])
+lines(density(dat[dat$Plasma>=1,17]),lwd=1.5,col=col[5])
 lines(density(GRCh38$PhastCon30),lwd=1.5,col=col[6])
+lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Has_snoRNA!=".",17]),lwd=1.5,col="gray50",lty=2)
 PhastCons30.line <- recordPlot()
 invisible(dev.off())
-ggarrange(ggarrange(vennplot1, vennplot2,ncol=2),
-          ggarrange(vennplot3, vennplot4,ncol=2),
-          ggarrange(length.line,GC.line,ncol=2),
-          ggarrange(MFE.line,PhastCons30.line,ncol = 2),nrow = 4)
+ggarrange(ggarrange(length.line,GC.line,ncol=2),
+          ggarrange(MFE.line,PhastCons30.line,ncol = 2),nrow = 2)
 dev.off()
-#cleanup Veen log file
-unlink("*.log")
-```
-
-```{r, fig.height=2, fig.width=4}
-ggarrange(vennplot1, vennplot2,ncol=2)
-```
-```{r, fig.height=6,fig.width=12}
-ggarrange(vennplot3, vennplot4,ncol=2)
 ```
 ```{r, fig.height=6,fig.width=12}
 ggarrange(length.line,GC.line,ncol=2)
