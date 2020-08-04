@@ -97,7 +97,7 @@ dim(dat[dat$DICER_CCR!="." & dat$AGO_CCR!="." & rowMaxs(as.matrix(dat[,88:92]))>
 #number of FLEXIs with high/low (0.5) PhastCons30 score
 dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$PhastCon30>=0.5,])
 dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$PhastCon30<0.5,])
-dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & round(dat$PhastCon30,2)==1,])
+dim(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$PhastCon30>=0.99,])
 ```
 
 ```{r}
