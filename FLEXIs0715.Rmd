@@ -424,6 +424,38 @@ invisible(dev.off())
 ggarrange(ggarrange(length.line,GC.line,ncol=2),
           ggarrange(MFE.line,PhastCons30.line,ncol = 2),nrow = 2)
 dev.off()
+
+#Density plot based on if FLEXI contain RBP
+pdf("Figures/Density_by_RBP.pdf",width=12,height=12)
+par(mfrow=c(2,2))
+#length
+FourCellPlasma<-read.delim("4cell_plasma_FLEXI.tsv")
+
+W_RBP<-FourCellPlasma[FourCellPlasma$RBP!="." | FourCellPlasma$AGO_CCR!="." | FourCellPlasma$DICER_CCR!=".",]
+WO_RBP<-FourCellPlasma[FourCellPlasma$RB=="." & FourCellPlasma$AGO_CCR=="." & FourCellPlasma$DICER_CCR==".",]
+plot(density(W_RBP$Len),bty="n",xlim=c(0,350),lwd=1.5,
+     ylim=c(0,0.015),main=NA,xlab="Intron length (bp)",col="red")
+lines(density(WO_RBP$Len),xlim=c(0,350),lwd=1.5,col="black")
+legend(150,0.012,lty=c(1,1),lwd=1.5,col=c("black","red"),
+       legend = c("FLEXIs without RBP sits","FLEXIs with RBP sits"),bty="n")
+
+#GC
+plot(density(W_RBP$GC),bty="n",xlim=c(0,100),lwd=1.5,
+     ylim=c(0,0.05),main=NA,xlab="Intron length (bp)",col="red")
+lines(density(WO_RBP$GC),xlim=c(0,100),lwd=1.5,col="black")
+
+#MEF
+plot(density(W_RBP$MFE),bty="n",xlim=c(-150,0),lwd=1.5,
+     ylim=c(0,0.03),main=NA,xlab="Minimal free energy (MFE; kcal/mol)",col="red")
+lines(density(WO_RBP$MFE),xlim=c(-150,0),lwd=1.5,col="black")
+
+#PhastCons
+plot(density(W_RBP$PhastCon30),bty="n",xlim=c(0,1),lwd=1.5,
+     ylim=c(0,7),main=NA,xlab="PhastCons score",col="red")
+lines(density(WO_RBP$PhastCon30),lwd=1.5,col="black")
+
+dev.off()
+
 ```
 ```{r, fig.height=6,fig.width=12}
 ggarrange(length.line,GC.line,ncol=2)
@@ -488,7 +520,8 @@ barplot(Fun$Intron,ylim=c(0,30))
 barplot(Fun$GRCh38,ylim=c(0,30))
 dev.off()
 #RBP top20 in allFLEX ang whole genome
-pdf("Figures/RBP_top20_by_cell.pdf",height=16,width=8)
+pdf("Figures/RBP_top20_by_cell.pdf",height=8,width=8)
+par(mfrow=c(2,2))
 Fun<-RBP[,c(1,46:49)]
 Fun<-cbind(Fun$RBP.name,data.frame(100*prop.table(as.matrix(Fun[,2:5]),margin = 2)))
 Fun<-Fun[order(Fun$Cells,decreasing = T),]
@@ -498,22 +531,8 @@ barplot(Fun$All_Intron[1:20],ylim=c(0,20))
 barplot(Fun$GRCh38[1:20],ylim=c(0,20))
 dev.off()
 
-#RBP top20 in allFLEX, by number
-pdf("Figures/RBP_top20_4cell_log.pdf",height=6,width=12)
-Fun<-RBP[,c(1,46:49)]
-Fun<-Fun[order(Fun$Cells,decreasing = T),]
-barplot(Fun$Cells[Fun$Cells>=30],ylim=c(1,10000),log="y",
-        names.arg =Fun$RBP.name[Fun$Cells>=30],las=2)
-dev.off()
-
-pdf("Figures/RBP_top20_4cell_linear.pdf",height=6,width=12)
-Fun<-RBP[,c(1,46:49)]
-Fun<-Fun[order(Fun$Cells,decreasing = T),]
-barplot(Fun$Cells[Fun$Cells>=30],ylim=c(0,2000),
-        names.arg =Fun$RBP.name[Fun$Cells>=30],las=2)
-dev.off()
-
-pdf("Figures/RBP_top20_by_genome.pdf",height=16,width=8)
+pdf("Figures/RBP_top20_by_genome.pdf",height=8,width=8)
+par(mfrow=c(2,2))
 Fun<-RBP[,c(1,46:49)]
 Fun<-cbind(Fun$RBP.name,data.frame(100*prop.table(as.matrix(Fun[,2:5]),margin = 2)))
 Fun<-Fun[order(Fun$GRCh38,decreasing = T),]
@@ -568,6 +587,15 @@ Com<-Com[order(Com$Cells,decreasing = T),]
 Com[,1]<-as.character(Com[,1])
 barplot(Com[1:10,2],ylim=c(0,1500),names.arg = Com[1:10,1],las=2,beside=F)
 dev.off()
+
+#Top20 RBPs by occurrence in FLEXIs
+pdf("Figures/RBP_top20_4cell_log.pdf",height=6,width=12)
+Fun<-read.table("4cell_plasma_RBP_by_FLEXI.counts",col.names=c("Name","RBP_by_FLEXI"))
+Fun<-Fun[order(Fun$RBP_by_FLEXI,decreasing = T),]
+barplot(Fun$RBP_by_FLEXI[Fun$RBP_by_FLEXI>=30],ylim=c(1,10000),log="y",
+        names.arg =Fun$Name[Fun$RBP_by_FLEXI>=30],las=2)
+dev.off()
+
 ```
 ```{r}
 dat<-read.delim("all.FLEXI")
