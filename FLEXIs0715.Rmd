@@ -23,6 +23,7 @@ library(stringi)
 library(matrixStats)
 library(ComplexHeatmap)
 library(tidyr)
+set.seed(740714)
 ```
 
 ## read data and calculate CPM
@@ -115,10 +116,8 @@ legend(0,1.0,bty="n",legend = c("All short introns (51,645 introns in 12,020 gen
 ```
 ```{r}
 #scatter plots of FLEXIs
-
-FLEXI_CPM<-read.delim("all.FLEXI")
-FLEXI_CPM<-FLEXI_CPM[,c(8,88:91)]
-Unfrag_total<-c(666.341854,713.775291,715.241521,768.433748)
+FLEXI_CPM<-dat[,c(8,88:91)]
+Unfrag_total<-mapped_reads[7:10]
 FLEXI_CPM[,2:5]<-t(t(FLEXI_CPM[,2:5])/Unfrag_total)
 FLEXI_CPM[FLEXI_CPM==0]<-2^-10
 
@@ -430,7 +429,6 @@ pdf("Figures/Density_by_RBP.pdf",width=12,height=12)
 par(mfrow=c(2,2))
 #length
 FourCellPlasma<-read.delim("4cell_plasma_FLEXI.tsv")
-
 W_RBP<-FourCellPlasma[FourCellPlasma$RBP!="." | FourCellPlasma$AGO_CCR!="." | FourCellPlasma$DICER_CCR!=".",]
 WO_RBP<-FourCellPlasma[FourCellPlasma$RB=="." & FourCellPlasma$AGO_CCR=="." & FourCellPlasma$DICER_CCR==".",]
 plot(density(W_RBP$Len),bty="n",xlim=c(0,350),lwd=1.5,
@@ -453,17 +451,8 @@ lines(density(WO_RBP$MFE),xlim=c(-150,0),lwd=1.5,col="black")
 plot(density(W_RBP$PhastCon30),bty="n",xlim=c(0,1),lwd=1.5,
      ylim=c(0,7),main=NA,xlab="PhastCons score",col="red")
 lines(density(WO_RBP$PhastCon30),lwd=1.5,col="black")
-
 dev.off()
-
 ```
-```{r, fig.height=6,fig.width=12}
-ggarrange(length.line,GC.line,ncol=2)
-```
-```{r, fig.height=6,fig.width=12}
-ggarrange(MFE.line,PhastCons30.line,ncol = 2)
-```
-
 ```{r}
 #hist_by counts, Fig. S1
 pdf("Figures/bar_by_counts.pdf")
@@ -592,10 +581,146 @@ dev.off()
 pdf("Figures/RBP_top20_4cell_log.pdf",height=6,width=12)
 Fun<-read.table("4cell_plasma_RBP_by_FLEXI.counts",col.names=c("Name","RBP_by_FLEXI"))
 Fun<-Fun[order(Fun$RBP_by_FLEXI,decreasing = T),]
+RBP_list<-Fun$Name[Fun$RBP_by_FLEXI>=30]
 barplot(Fun$RBP_by_FLEXI[Fun$RBP_by_FLEXI>=30],ylim=c(1,10000),log="y",
         names.arg =Fun$Name[Fun$RBP_by_FLEXI>=30],las=2)
 dev.off()
-
+# density plot for individual RBP
+pdf("RBP_density.pdf",width=11,height=8,onefile = T)
+par(mfrow=c(3,4))
+for (i in 1:length(RBP_list)){
+  # subset
+  if (RBP_list[i] =="AGO") {
+    temp1<-FourCellPlasma[FourCellPlasma$AGO_CCR!=".",]
+    temp2<-FourCellPlasma[FourCellPlasma$AGO_CCR==".",]
+  } else if (RBP_list[i] =="DICER") {
+    temp1<-FourCellPlasma[FourCellPlasma$DICER_CCR!=".",]
+    temp2<-FourCellPlasma[FourCellPlasma$DICER_CCR==".",]
+  } else {
+    temp1<-FourCellPlasma[grep(RBP_list[i],FourCellPlasma$RBP),]
+    temp2<-FourCellPlasma[grep(RBP_list[i],FourCellPlasma$RBP,invert=T),]
+  }
+  Len_t<-0
+  GC_t<-0
+  MFE_t<-0
+  PhastCon30_t<-0
+  for (inter in 1:100){
+    sample_size<-Fun$RBP_by_FLEXI[Fun$Name==RBP_list[i]]
+    test_set<-FourCellPlasma[sample(1:8144,sample_size),]
+    if (wilcox.test(temp1$Len,test_set$Len)$p.value>0.05) {Len_t=Len_t+1}
+    if (wilcox.test(temp1$GC,test_set$GC)$p.value>0.05) {GC_t=GC_t+1}
+    if (wilcox.test(temp1$MFE,test_set$MFE)$p.value>0.05) {MFE_t=MFE_t+1}
+    if (wilcox.test(temp1$PhastCon30,test_set$PhastCon30)$p.value>0.05) {PhastCon30_t=PhastCon30_t+1}
+  }
+  #Length
+  plot(density(temp1$Len),bty="n",xlim=c(0,350),lwd=1.5,
+       ylim=c(0,0.015),main=NA,xlab="Intron length (bp)",col="red")
+  lines(density(temp2$Len),xlim=c(0,350),lwd=1.5,col="black")
+  legend(120,0.012,lty=c(1,1),lwd=1.5,col=c("red","black"),
+         legend = c(paste0(RBP_list[i]," (",Fun$RBP_by_FLEXI[Fun$Name==RBP_list[i]],")"),"Others"),bty="n")
+  if (Len_t==0) {
+    legend("topleft",legend="FDR < 0.01",bty="n") 
+  } else {
+    legend("topleft",legend=paste0("FDR = ",format(Len_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+  }
+  #GC
+  plot(density(temp1$GC),bty="n",xlim=c(0,100),lwd=1.5,
+       ylim=c(0,0.05),main=NA,xlab="GC (%)",col="red")
+  lines(density(temp2$GC),xlim=c(0,100),lwd=1.5,col="black")
+  if (GC_t==0) {
+    legend("topleft",legend="FDR < 0.01",bty="n") 
+  } else {
+    legend("topleft",legend=paste0("FDR = ",format(GC_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+  }
+  #MEF
+  plot(density(temp1$MFE),bty="n",xlim=c(-150,0),lwd=1.5,
+       ylim=c(0,0.03),main=NA,xlab="Minimal free energy (MFE; kcal/mol)",col="red")
+  lines(density(temp2$MFE),xlim=c(-150,0),lwd=1.5,col="black")
+  if (MFE_t==0) {
+    legend("topleft",legend="FDR < 0.01",bty="n") 
+  } else {
+    legend("topleft",legend=paste0("FDR = ",format(MFE_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+  }
+  #PhastCons
+  plot(density(temp1$PhastCon30),bty="n",xlim=c(0,1),lwd=1.5,
+       ylim=c(0,7),main=NA,xlab="PhastCons score",col="red")
+  lines(density(temp2$PhastCon30),lwd=1.5,col="black")
+  if (PhastCon30_t==0) {
+    legend("topleft",legend="FDR < 0.01",bty="n") 
+  } else {
+    legend("topleft",legend=paste0("FDR = ",format(PhastCon30_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+  }
+}
+dev.off()
+# added plots for FDR<=0.05
+pdf("RBP_density_sig.pdf",width=11,height=8,onefile = T)
+par(mfrow=c(3,4))
+for (i in 1:length(RBP_list)){
+  # subset
+  if (RBP_list[i] =="AGO") {
+    temp1<-FourCellPlasma[FourCellPlasma$AGO_CCR!=".",]
+    temp2<-FourCellPlasma[FourCellPlasma$AGO_CCR==".",]
+  } else if (RBP_list[i] =="DICER") {
+    temp1<-FourCellPlasma[FourCellPlasma$DICER_CCR!=".",]
+    temp2<-FourCellPlasma[FourCellPlasma$DICER_CCR==".",]
+  } else {
+    temp1<-FourCellPlasma[grep(RBP_list[i],FourCellPlasma$RBP),]
+    temp2<-FourCellPlasma[grep(RBP_list[i],FourCellPlasma$RBP,invert=T),]
+  }
+  Len_t<-0
+  GC_t<-0
+  MFE_t<-0
+  PhastCon30_t<-0
+  for (inter in 1:100){
+    sample_size<-Fun$RBP_by_FLEXI[Fun$Name==RBP_list[i]]
+    test_set<-FourCellPlasma[sample(1:8144,sample_size,replace = F),]
+    if (wilcox.test(temp1$Len,test_set$Len,exact = F)$p.value>0.05) {Len_t=Len_t+1}
+    if (wilcox.test(temp1$GC,test_set$GC,exact = F)$p.value>0.05) {GC_t=GC_t+1}
+    if (wilcox.test(temp1$MFE,test_set$MFE,exact = F)$p.value>0.05) {MFE_t=MFE_t+1}
+    if (wilcox.test(temp1$PhastCon30,test_set$PhastCon30,exact = F)$p.value>0.05) {PhastCon30_t=PhastCon30_t+1}
+  }
+  if (Len_t<=5 | GC_t <=5 | MFE_t <=5 | PhastCon30_t <=5 ) {
+    #Length
+    plot(density(temp1$Len),bty="n",xlim=c(0,350),lwd=1.5,
+         ylim=c(0,0.015),main=NA,xlab="Intron length (bp)",col="red")
+    lines(density(temp2$Len),xlim=c(0,350),lwd=1.5,col="black")
+    legend(120,0.012,lty=c(1,1),lwd=1.5,col=c("red","black"),
+           legend = c(paste0(RBP_list[i]," (",Fun$RBP_by_FLEXI[Fun$Name==RBP_list[i]],")"),"Others"),bty="n")
+    if (Len_t==0) {
+      legend("topleft",legend="FDR < 0.01",bty="n") 
+    } else {
+      legend("topleft",legend=paste0("FDR = ",format(Len_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+    #GC
+    plot(density(temp1$GC),bty="n",xlim=c(0,100),lwd=1.5,
+         ylim=c(0,0.05),main=NA,xlab="GC (%)",col="red")
+    lines(density(temp2$GC),xlim=c(0,100),lwd=1.5,col="black")
+    if (GC_t==0) {
+      legend("topleft",legend="FDR < 0.01",bty="n") 
+    } else {
+      legend("topleft",legend=paste0("FDR = ",format(GC_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+    #MEF
+    plot(density(temp1$MFE),bty="n",xlim=c(-150,0),lwd=1.5,
+         ylim=c(0,0.03),main=NA,xlab="Minimal free energy (MFE; kcal/mol)",col="red")
+    lines(density(temp2$MFE),xlim=c(-150,0),lwd=1.5,col="black")
+    if (MFE_t==0) {
+      legend("topleft",legend="FDR < 0.01",bty="n") 
+    } else {
+      legend("topleft",legend=paste0("FDR = ",format(MFE_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+    #PhastCons
+    plot(density(temp1$PhastCon30),bty="n",xlim=c(0,1),lwd=1.5,
+         ylim=c(0,7),main=NA,xlab="PhastCons score",col="red")
+    lines(density(temp2$PhastCon30),lwd=1.5,col="black")
+    if (PhastCon30_t==0) {
+      legend("topleft",legend="FDR < 0.01",bty="n") 
+    } else {
+      legend("topleft",legend=paste0("FDR = ",format(PhastCon30_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+  }
+}
+dev.off()
 ```
 ```{r}
 dat<-read.delim("all.FLEXI")
