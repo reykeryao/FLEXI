@@ -1,18 +1,3 @@
----
-title: "FLEXIs"
-knit: (function(input_file, encoding) {
-  out_dir <- 'docs';
-  rmarkdown::render(input_file,
- encoding=encoding,
- output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
-author: "Jun Yao"
-date: "7/10/2020"
-output: html_document
----
-
-```{r setup, include=FALSE}
-rm(list=ls())
-knitr::opts_chunk$set(echo = TRUE,self_contained=F,warning=F)
 library(matrixStats)
 library(tidyr)
 library(RColorBrewer)
@@ -26,9 +11,7 @@ library(ggfortify)
 library(gridGraphics)
 library(VennDiagram)
 library(UpSetR)
-set.seed(740714)
-```
-```{r}
+
 dat<-read.delim("all.FLEXI")
 mapped_reads<-c(305.069837,251.558067,268.210336,477.543790,207.491024,
                 692.091831,666.341854,713.775291,715.241521,768.433748,71.116246)
@@ -904,4 +887,3 @@ for (i in 1:length(RBP_list_sig)){
   }
 }
 dev.off()
-```
