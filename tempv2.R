@@ -837,7 +837,8 @@ for (i in 1:length(RBP_list_sig)){
   GC_t<-0
   MFE_t<-0
   PhastCon30_t<-0
-  for (inter in 1:100){
+  rep_times<-100
+  for (inter in 1:rep_times){
     sample_size<-Fun$RBP_by_FLEXI[Fun$Name==RBP_list_sig[i]]
     test_set<-FourCellPlasma[sample(1:8144,sample_size,replace = F),]
     if (wilcox.test(temp1$Len,test_set$Len,exact = F)$p.value>0.05) {Len_t=Len_t+1}
@@ -855,7 +856,7 @@ for (i in 1:length(RBP_list_sig)){
     if (Len_t==0) {
       legend("topleft",legend="FDR < 0.01",bty="n") 
     } else {
-      legend("topleft",legend=paste0("FDR = ",format(Len_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+      legend("topleft",legend=paste0("FDR = ",format(Len_t/rep_times,digits=2,nsmall=2,big.mark = ".")),bty="n") 
     }
     #GC
     plot(density(temp1$GC),bty="n",xlim=c(0,100),lwd=1.5,
@@ -864,7 +865,7 @@ for (i in 1:length(RBP_list_sig)){
     if (GC_t==0) {
       legend("topleft",legend="FDR < 0.01",bty="n") 
     } else {
-      legend("topleft",legend=paste0("FDR = ",format(GC_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+      legend("topleft",legend=paste0("FDR = ",format(GC_t/rep_times,digits=2,nsmall=2,big.mark = ".")),bty="n") 
     }
     #MEF
     plot(density(temp1$MFE),bty="n",xlim=c(-150,0),lwd=1.5,
@@ -873,7 +874,7 @@ for (i in 1:length(RBP_list_sig)){
     if (MFE_t==0) {
       legend("topleft",legend="FDR < 0.01",bty="n") 
     } else {
-      legend("topleft",legend=paste0("FDR = ",format(MFE_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+      legend("topleft",legend=paste0("FDR = ",format(MFE_t/rep_times,digits=2,nsmall=2,big.mark = ".")),bty="n") 
     }
     #PhastCons
     plot(density(temp1$PhastCon30),bty="n",xlim=c(0,1),lwd=1.5,
@@ -882,7 +883,7 @@ for (i in 1:length(RBP_list_sig)){
     if (PhastCon30_t==0) {
       legend("topleft",legend="FDR < 0.01",bty="n") 
     } else {
-      legend("topleft",legend=paste0("FDR = ",format(PhastCon30_t/100,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+      legend("topleft",legend=paste0("FDR = ",format(PhastCon30_t/rep_times,digits=2,nsmall=2,big.mark = ".")),bty="n") 
     }
   }
 }
