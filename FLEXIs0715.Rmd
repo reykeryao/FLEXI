@@ -260,7 +260,7 @@ pdf("Figures/Fig1C_1.pdf")
 plot(density(combined$Per[combined$nonFLEXI==1]),bty="n",lwd=1, ylim=c(0,0.1),xlim=c(0,100),main=NA,
          xlab="Length (%)",col="black")
 lines(density(combined$Per[combined$nonFLEXI!=1]),lwd=1,col="red")
-legend(20,0.08,lty=c(1,1),lwd=1,col=c("red","black"),
+legend(20,0.08,lty=c(1,1),lwd=1,col=c("black","red"),
            legend = c("Other short introns","FLEXIs"),bty="n")
 dev.off()
 #remove objects
