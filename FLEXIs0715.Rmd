@@ -20,6 +20,8 @@ library(gplots)
 library(ggplot2)
 library(ggpubr)
 library(grid)
+library(Rtsne)
+library(zinbwave)
 library(gridExtra)
 library(cowplot)
 library(ggfortify)
@@ -71,7 +73,8 @@ Cell_counts<-Cell_counts[Cell_counts$ID%in%GID_list,c(1,60:62)]
 Cell_counts[,2:4]<-t(t(Cell_counts[,2:4])/Unfrag_total)
 #Assign log2CPM of -10 for those with 0 count
 Cell_counts[Cell_counts==0]<-2^-10
-
+```
+```{r}
 postscript("Figures/Fig1B.eps",width = 15,height=10,horizontal = F)
 par(pch=16,mfrow=c(2,3),pty="s")
 #FLEXIs scatter
@@ -165,7 +168,7 @@ Frag_by_FLEXI[is.na(Frag_by_FLEXI)]<-0
 Frag_by_FLEXI[,2:5]<-t(t(Frag_by_FLEXI[,2:5])/Frag_total)
 #Assign log2CPM of -10 for those with 0 count
 Frag_by_FLEXI[Frag_by_FLEXI==0]<-2^-10
-colnames(Frag_by_FLEXI)<-colnames(FLEXI_CPM)<-c("ID","PatientA_Healthy","PatientB_Healthy",
+colnames(Frag_by_FLEXI)<-c("ID","PatientA_Healthy","PatientB_Healthy",
                                                 "PatientA_Cancer","PatientB_Cancer")
 
 
@@ -213,7 +216,7 @@ text(-5,10,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
 points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%GID_list,c(3,5)]),col="red")
 dev.off()
 #remove temperary object
-rm(list=c("FLEXI_by_GID","FLEXI_CPM","Frag_by_FLEXI","Repo","cor_p","cor_s","Frag_total","Unfrag_total","GID_list"))
+rm(list=c("FLEXI_by_GID","Frag_by_FLEXI","Repo","cor_p","cor_s","Frag_total","Unfrag_total","GID_list"))
 
 #Fig7C hallmark geneset enrichment heatmap
 #GID of detected FLEXIs from each sample used for ShinyGO
@@ -228,10 +231,10 @@ dev.off()
 #remove temperary object
 rm(list=c("Hall","scol"))
 
-#FigS1 density plot 
+#FigS4 density plot 
 col=c("tomato","royalblue1","greenyellow","goldenrod","orchid","black")
 name<-c("HEK","Hela","K562","UHRR")
-pdf("Figures/FigS1.pdf",width=10,height=10)
+pdf("Figures/FigS4.pdf",width=10,height=10)
 par(mfrow=c(2,2))
 for (i in 1:4){
   per_dat<-read.delim(gzfile(paste0(name[i],".per.info.gz")))
@@ -267,99 +270,181 @@ dev.off()
 rm(list=c("combined","per_dat","i","name"))
 #Density plot,Fig1C right 4 panels
 pdf("Figures/Fig1C_2.pdf",width=12,height=12)
+col=c("red","orchid","black")
 #length
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat[dat$UHRR>=1,22]),bty="n",xlim=c(0,350),lwd=1.5,
+dat1<-dat[rowSums(dat[,88:92])>0,]
+plot(density(dat1[,22]),bty="n",xlim=c(0,350),lwd=1.5,
      ylim=c(0,0.04),main=NA,xlab="Intron length (bp)",col=col[1])
-lines(density(dat[dat$K562>=1,22]),xlim=c(0,350),lwd=1.5,col=col[2])
-lines(density(dat[dat$HEK>=1,22]),xlim=c(0,350),lwd=1.5,col=col[3])
-lines(density(dat[dat$Hela>=1,22]),xlim=c(0,350),lwd=1.5,col=col[4])
-lines(density(dat[dat$Plasma>=1,22]),xlim=c(0,350),lwd=1.5,col=col[5])
-lines(density(GRCh38$Len),xlim=c(0,350),lwd=1.5,col=col[6])
-legend(200,0.03,lty=c(1,1,1,1,1,1),lwd=1.5,col=col,legend = c("UHRR","K-562","HEK-293T","Hela S3","Plasma","GRCh38"),bty="n")
+lines(density(dat1[dat1$Plasma>=1,22]),xlim=c(0,350),lwd=1.5,col=col[2])
+lines(density(GRCh38$Len[!GRCh38$ID%in%dat1$ID]),xlim=c(0,350),lwd=1.5,col=col[3],lty=2)
+#lines(density(GRCh38$Len),xlim=c(0,350),lwd=1.5,col=col[6])
+legend(200,0.03,lty=c(1,1,2),lwd=1.5,col=col,
+       legend = c("FLEXIs (Cellular)","FLEXIs (Plasma)","Other short introns"),bty="n")
 length.line <- recordPlot()
 invisible(dev.off())
 
 #GC
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat[dat$UHRR>=1,21]),bty="n",xlim=c(0,100),lwd=1.5,
+plot(density(dat1[,21]),bty="n",xlim=c(0,100),lwd=1.5,
      ylim=c(0,0.08),main=NA,xlab="GC (%)",col=col[1])
-lines(density(dat[dat$K562>=1,21]),xlim=c(0,350),lwd=1.5,col=col[2])
-lines(density(dat[dat$HEK>=1,21]),xlim=c(0,350),lwd=1.5,col=col[3])
-lines(density(dat[dat$Hela>=1,21]),xlim=c(0,350),lwd=1.5,col=col[4])
-lines(density(dat[dat$Plasma>=1,21]),xlim=c(0,350),lwd=1.5,col=col[5])
-lines(density(GRCh38$GC),xlim=c(0,350),lwd=1.5,col=col[6])
+lines(density(dat1[dat1$Plasma>=1,21]),xlim=c(0,350),lwd=1.5,col=col[2])
+lines(density(GRCh38$GC[!GRCh38$ID%in%dat1$ID]),xlim=c(0,350),lwd=1.5,col=col[3],lty=2)
 GC.line <- recordPlot()
 invisible(dev.off())
 
 #MEF
 pdf(NULL)
 dev.control(displaylist="enable")
-plot(density(dat[dat$UHRR>=1,20]),bty="n",xlim=c(-150,0),lwd=1.5,
+plot(density(dat1[,20]),bty="n",xlim=c(-150,0),lwd=1.5,
      ylim=c(0,0.05),main=NA,xlab="MFE (kcal/mol)",col=col[1])
-lines(density(dat[dat$K562>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[2])
-lines(density(dat[dat$HEK>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[3])
-lines(density(dat[dat$Hela>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[4])
-lines(density(dat[dat$Plasma>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[5])
-lines(density(GRCh38$MFE),xlim=c(-150,0),lwd=1.5,col=col[6])
+lines(density(dat1[dat1$Plasma>=1,20]),xlim=c(-150,0),lwd=1.5,col=col[2])
+lines(density(GRCh38$MFE[!GRCh38$ID%in%dat1$ID]),xlim=c(-150,0),lwd=1.5,col=col[3],lty=2)
 MFE.line <- recordPlot()
 invisible(dev.off())
 
-#PhastCons
-pdf(NULL)
-dev.control(displaylist="enable")
-plot(density(dat[dat$UHRR>=1,17]),bty="n",xlim=c(0,1),lwd=1.5,
-     ylim=c(0,7),main=NA,xlab="PhastCons score",col=col[1])
-lines(density(dat[dat$K562>=1,17]),lwd=1.5,col=col[2])
-lines(density(dat[dat$HEK>=1,17]),lwd=1.5,col=col[3])
-lines(density(dat[dat$Hela>=1,17]),lwd=1.5,col=col[4])
-lines(density(dat[dat$Plasma>=1,17]),lwd=1.5,col=col[5])
-lines(density(GRCh38$PhastCon30),lwd=1.5,col=col[6])
-lines(density(dat[rowMaxs(as.matrix(dat[,88:92]))>0 & dat$Has_snoRNA!=".",17]),lwd=1.5,col="gray50",lty=2)
-PhastCons30.line <- recordPlot()
-invisible(dev.off())
-ggarrange(ggarrange(length.line,GC.line,ncol=2),
-          ggarrange(MFE.line,PhastCons30.line,ncol = 2),nrow = 2)
+ggarrange(ggarrange(length.line,GC.line,MFE.line,ncol=2,nrow = 2))
 dev.off()
 #remove objects
-rm(list=c("GC.line","length.line",'MFE.line',"PhastCons30.line"))
+rm(list=c("GC.line","length.line","MFE.line","col"))
 
-#Fig1D, RPM density of FLEXIs, different group
+##New ID with scale of sncRNA
+##Fig1D, RPM density of FLEXIs, different group
 gene_counts<-read.delim("combined_counts.tsv")
-snoRNA_list<-unique(dat$Has_snoRNA[dat$Has_snoRNA!="."])
-snoRNA<-gene_counts[gene_counts$Name%in%snoRNA_list,c(2,4:14)]
-pdf("Figures/Fig1D.pdf",onefile = T,width=8,height=12)
-par(mfrow=c(3,2),lwd=1.5)
-D_height<-c(1.5,1.5,2,2,2)
-for (i in c(88:92)){
-    plot(density(log10(dat[dat[,i]>0 & dat$Is_agotron!=".",i]/mapped_reads[i-81])),bty="n",xlab="RPM",
-         xlim=c(-4,4),ylim=c(0,D_height[i-87]),main=colnames(dat)[i],col="deepskyblue2",axes=F)
-    lines(density(log10(dat[dat[,i]>0 & dat$Is_mirtron!=".",i]/mapped_reads[i-81])),col="firebrick2")
-    lines(density(log10(dat[dat[,i]>0 & dat$Is_mirtron=="." & dat$Is_agotron=="." & dat$Has_snoRNA==".",
-                                i]/mapped_reads[i-81])),col="black")
-    if (i<92){
-      lines(density(log10(dat[dat[,i]>0 & dat$Has_snoRNA!=".",i]/mapped_reads[i-81])),col="goldenrod")
-    }
-    lines(density(log10(snoRNA[snoRNA[,i-80]>0,i-80]/mapped_reads[i-81])),col="goldenrod",lty=4)
-    if (i==88){
-      legend(0,1.5,bty="n",legend = c("Other FLEXIs", "Agotron","Mirtron","snoRNA FLEXIs","snoRNAs"),
-             col=c("black","firebrick2","deepskyblue2","goldenrod","goldenrod"),
-             lty=c(1,1,1,1,4),lwd=1.5)
-    }
-    if (D_height[i-87]==2){
-      axis(2,labels=seq(0,2,1),las=1,at=seq(0,2,1),las=2)
+gene_counts[gene_counts$Type=="scaRNA",3]<-"snoRNA"
+snoRNA<-gene_counts[gene_counts$Type=="snoRNA",c(2,10:14)]
+snoRNA<-separate(snoRNA,col = "Name",into = "Name",sep = "-",remove = T)
+snoRNA$Name<-gsub(snoRNA$Name,pattern = "[A-Z]$|P[1-9]$",replacement="")
+snoRNA$Name[snoRNA$Name=="U3"]<-"SNORD3"
+snoRNA$Name[snoRNA$Name=="U8"]<-"SNORD118"
+snoRNA$Name[snoRNA$Name=="snoU13"]<-"SNORD13"
+snoRNA$Name[snoRNA$Name=="snoU2_19"]<-"snoU2"
+snoRNA<-aggregate(.~Name,data=snoRNA,FUN = sum)
+snRNA<-gene_counts[gene_counts$Type=="snRNA",c(2,10:13)]
+U7<-log10(colSums(snRNA[grep("U7\\b|U7[A-Z]",snRNA$Name),2:5])/mapped_reads[7:10])
+U11<-log10(colSums(snRNA[grep("U11\\b|U11[A-Z]",snRNA$Name),2:5])/mapped_reads[7:10])
+SNORD74<-log10(colSums(snoRNA[snoRNA$Name=="SNORD74",2:5])/mapped_reads[7:10])
+SNORD78<-log10(colSums(snoRNA[snoRNA$Name=="SNORD78",2:5])/mapped_reads[7:10])
+RN7SK<-log10(colSums(gene_counts[gene_counts$Type=="7SK",10:13])/mapped_reads[7:10])
+RN7SL<-log10(colSums(gene_counts[gene_counts$Type=="7SL",10:13])/mapped_reads[7:10])
+YRNA<-log10(colSums(gene_counts[gene_counts$Type=="YRNA",10:13])/mapped_reads[7:10])
+VTRNA<-log10(colSums(gene_counts[gene_counts$Type=="VTRNA",10:13])/mapped_reads[7:10])
+RMRP=log10(colSums(gene_counts[gene_counts$Name=="RMRP",10:13])/mapped_reads[7:10])
+RPPH1=log10(colSums(gene_counts[gene_counts$Name=="RPPH1",10:13])/mapped_reads[7:10])
+snc<-data.frame(rbind(SNORD74,SNORD78,U7,U11,YRNA,VTRNA,RN7SK,RN7SL,RMRP,RPPH1))
+
+pdf("Figures/Fig1D.pdf",onefile = T,width=8,height=8)
+par(mfrow=c(2,2),lwd=1.5)
+D_height<-c(2,2,2,2,2)
+for (i in c(88:91)){
+  plot(density(log10(dat[dat[,i]>0 & dat$Is_agotron!=".",i]/mapped_reads[i-81])),bty="n",xlab="RPM",
+       xlim=c(-4,6),ylim=c(0,D_height[i-87]),main=colnames(dat)[i],col="deepskyblue2",axes=F)
+  lines(density(log10(dat[dat[,i]>0 & dat$Is_mirtron!=".",i]/mapped_reads[i-81])),col="firebrick2")
+  lines(density(log10(dat[dat[,i]>0 & dat$Is_mirtron=="." & dat$Is_agotron=="." & dat$Has_snoRNA==".",
+                          i]/mapped_reads[i-81])),col="black")
+  if (i<92){
+    lines(density(log10(dat[dat[,i]>0 & dat$Has_snoRNA!=".",i]/mapped_reads[i-81])),col="goldenrod")
+  }
+  lines(density(log10(snoRNA[snoRNA[,i-86]>0,i-86]/mapped_reads[i-81])),col="goldenrod",lty=4)
+  snc<-snc[order(snc[,i-87],decreasing = F),]
+  for (j in (1:dim(snc)[1])){
+    if (j==1){
+      segments(x0=snc[j,i-87],y0=1.5,y1=1.8,lty=1)
+      text (snc[j,i-87],1.85,rownames(snc)[j],cex=0.7,adj=0)
     } else {
-      axis(2,labels=seq(0,1.5,0.5),las=1,at=seq(0,1.5,0.5),las=2)
+      segments(x0=snc[j,i-87],y0=0.5,y1=1.8-j*0.12,lty=1)
+      text (snc[j,i-87],1.85-j*0.12,rownames(snc)[j],cex=0.7,adj=0)
     }
-    
-    axis(1,labels=c(parse(text='10^-4'),bquote(10^-3),bquote(10^-2),bquote(10^-1),1,10,bquote(10^2),bquote(10^3),
-                    bquote(10^4)),
-         at=seq(-4,4,1))
+  }
+  if (i==88){
+    legend(0.5,2,bty="n",legend = c("Other FLEXIs", "Agotron","Mirtron","snoRNA FLEXIs","snoRNAs"),
+           col=c("black","firebrick2","deepskyblue2","goldenrod","goldenrod"),
+           lty=c(1,1,1,1,4),lwd=1.5,cex=0.7)
+  }
+  axis(2,labels=seq(0,2,1),las=1,at=seq(0,2,1),las=2)
+  axis(1,labels=c(parse(text='10^-4'),bquote(10^-2),1,bquote(10^2),bquote(10^4),
+                  bquote(10^6)),at=seq(-4,6,2))
 }
 dev.off()
-rm(list=c("snoRNA","D_height","i","snoRNA_list"))
+rm(list=c("snoRNA","snRNA","i","U7","U11","SNORD74","SNORD78","RN7SK","RN7SL",
+          "YRNA","VTRNA","RMRP","RPPH1","snc","j","D_height"))
+
+#linear regression model of sncRNA/FLEXIs, FigS6
+gene_counts<-read.delim("combined_counts.tsv")
+temp<-gene_counts[gene_counts$Type=="snRNA",c(2,10:14)]
+gene_for_correlation<-data.frame("U1"=colSums(temp[grep("U1\\b|U1[A-Z]",temp$Name),2:6]))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U2"=colSums(temp[grep("U2\\b|U2[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U4"=colSums(temp[grep("U4\\b|U4[B-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U5"=colSums(temp[grep("U5\\b|U5[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U6"=colSums(temp[grep("U6\\b|U6[B-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U7"=colSums(temp[grep("U7\\b|U7[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U11"=colSums(temp[grep("U11\\b|U11[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U12"=colSums(temp[grep("U12\\b|U12[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U4ATAC"=colSums(temp[grep("U4[ATAC|atac]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("U6ATAC"=colSums(temp[grep("U6[ATAC|atac]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("RN7SK"=colSums(gene_counts[gene_counts$Type=="7SK",10:14])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("RN7SL"=colSums(gene_counts[gene_counts$Type=="7SL",10:14])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("RPPH1"=colSums(gene_counts[gene_counts$Name=="RPPH1",10:14])))
+temp<-gene_counts[gene_counts$Type=="snoRNA",c(2,10:14)]
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("SNORD3"=colSums(temp[grep("SNORD3\\b|SNORD3[A-Z]|U3",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("SNORD118"=colSums(temp[grep("SNORD118\\b|SNORD118[A-Z]|U8",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("SNORD13"=colSums(temp[grep("SNORD13\\b|SNORD13[A-Z]|U13",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("SNORD14"=colSums(temp[grep("SNORD14\\b|SNORD14[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("SNORD22"=colSums(temp[grep("SNORD22\\b|SNORD22[A-Z]",temp$Name),2:6])))
+gene_for_correlation<-cbind(gene_for_correlation,
+                            data.frame("RMRP"=colSums(gene_counts[gene_counts$Name=="RMRP",10:14])))
+gene_for_correlation<-gene_for_correlation/mapped_reads[7:11]
+gene_for_correlation<-rbind(gene_for_correlation,"Copy"=c(1e6,5e5,2e5,2e5,4e5,4e3,1e4,5e3,2e3,2e3,2e5,5e5,2e5,
+                                                   2e5,4e4,1e4,1e4,1e4,1e5))
+gene_for_correlation<-data.frame(t(gene_for_correlation))
+gene_for_correlation$Type=c(rep("GU-AG splicing",5),"U7",rep("AU-AC splicing",4),"7SK","7SL","RNase P",
+                            rep("C/D box snoRNA",5),"MRP")
+gene_for_correlation$Type<-as.factor(gene_for_correlation$Type)
+pdf("Figures/FigS6.pdf",height=8,width=8)
+par(bty="n",pty="s",mfrow=c(2,2))
+scol <- brewer.pal(8, "Set1")
+y<-log10(gene_for_correlation[,6])
+for (i in 1:4){
+  x<-log10(gene_for_correlation[,i])
+  lm.out <- lm(y ~ x)
+  newx = seq(min(x),max(x),by = 0.05)
+  conf_interval <- predict(lm.out, newdata=data.frame(x=newx), interval="confidence",
+                           level = 0.95)
+  plot(x,y,pch=16,xlim=c(0,10),ylim=c(0,10),
+       col=scol[gene_for_correlation$Type],ylab=bquote(log[10]~(molecule/cell)),
+       xlab=bquote(log[10] (RPM)),
+       main=colnames(gene_for_correlation)[i])
+  abline(lm.out, col="lightblue")
+  matlines(newx, conf_interval[,2:3], col = "blue", lty=2)
+  if (i==1){
+    legend(5,4,legend = levels(gene_for_correlation$Type),col=scol,bty="n",pch=16,cex=0.7)
+  }
+  cor_s=formatC(cor(x,y,method = "spearman"),digits=2, format="f")
+  cor_p=formatC(cor(x,y,method = "pearson"),digits=2, format="f")
+  text(1,8,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+}
+dev.off()
+rm(list=c("temp","gene_for_correlation","gene_counts","scol","y","x","i","cor_s",
+          "cor_p","newx","lm.out","conf_interval"))
 
 #Fig3B Venn of mirtrons and agotrons
 pdf(paste0("Figures/Fig3B.pdf"),width=12,height=6)
@@ -427,7 +512,7 @@ UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
 dev.off()
 rm(list=c("set_1","set_2","set_3","set_4","set_5","set","m","cut_off"))
 
-#Fig7A and FigS7, FLEXI by 0 cutoff and ≥ 0.01 RPM FLEXIs
+#Fig7A and FigS11, FLEXI by 0 cutoff and ≥ 0.01 RPM FLEXIs
 cut_off=0.01
 FLEXI_CPM<-dat[,c(1,8,82:87)]
 FLEXI_CPM<-FLEXI_CPM[rowSums(FLEXI_CPM[,3:8])>0,]
@@ -464,9 +549,9 @@ UpSet(m,set_order=c("MDA-MB-231","MCF7","Patient A (Cancer)",
       comb_order=c(6,15,16,13,14,26:21,31:30,29:28,1,5:2,12:7,20:17,27))
 dev.off()
 
-#FigS7, cutoff 0 RPM, by FLEXI
+#FigS11, cutoff 0 RPM, by FLEXI
 cut_off=0
-postscript("Figures/FigS7_1.eps",height=4,width=8)
+postscript("Figures/FigS11_1.eps",height=4,width=8)
 set_1 <- as.character(FLEXI_CPM$ID[(FLEXI_CPM$BCH3+FLEXI_CPM$BCH4)>cut_off])
 set_2 <- as.character(FLEXI_CPM$ID[FLEXI_CPM$BC3>cut_off])
 set_3 <- as.character(FLEXI_CPM$ID[FLEXI_CPM$BC4>cut_off])
@@ -481,7 +566,7 @@ UpSet(m,set_order=c("MDA-MB-231","MCF7","Patient A (Cancer)",
       comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)],
       comb_order=c(6,15,16,13,14,26:21,31:30,29:28,1,5:2,12:7,20:17,27))
 dev.off()
-postscript(paste0("Figures/FigS7_2.eps"),height=4,width=8)
+postscript(paste0("Figures/FigS11_2.eps"),height=4,width=8)
 set_1 <- unique(FLEXI_CPM$GID[(FLEXI_CPM$BCH3+FLEXI_CPM$BCH4)>cut_off])
 set_2 <- unique(FLEXI_CPM$GID[FLEXI_CPM$BC3>cut_off])
 set_3 <- unique(FLEXI_CPM$GID[FLEXI_CPM$BC4>cut_off])
@@ -574,12 +659,17 @@ Phast99<-read.table("44phastCon99.RBP.counts",col.names=c("ID","P99"))
 Phast<-merge(Cell,Phast99,by=1,all=T)
 Phast[is.na(Phast)]<-0
 rownames(Phast)<-Phast$ID
-Phast<-data.frame(prop.table(as.matrix(Phast[,2:3]),margin = 2)*100)
-Phast$Name<-rownames(Phast)
-Phast<-Phast[,c(3,1:2)]
+Phast$pvalue<-1
+R_sum<-colSums(Phast[,2:3])
+for (i in 1:126){
+  Phast[i,4]<-fisher.test(as.matrix(rbind(Phast[i,2:3],R_sum),2,2))$p.value
+}
+
+Phast[,2:3]<-data.frame(prop.table(as.matrix(Phast[,2:3]),margin = 2)*100)
 Phast<-merge(Phast,RBP[,c(1,4,5,11)],by=1)
 Phast$col<-(Phast$Splicing.regulation+Phast$Spliceosome)/3+Phast$microRNA.processing
-Phast<-Phast[,c(1:3,7)]
+Phast<-Phast[,c(1:4,8)]
+
 pdf("Figures/Fig3D.pdf",height=6,width=12)
 par(mfrow=c(1,2),pty="s",pch=16)
 plot(Phast[Phast$col==0,c(2,3)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
@@ -588,8 +678,8 @@ points(Phast[Phast$col<1 & Phast$col>0,c(2,3)],col="red",cex=1.5)
 points(Phast[Phast$col==1,c(2,3)],col="orange",cex=1.5)
 points(Phast[Phast$col>1,c(2,3)],col="skyblue",cex=1.5)
 abline(0,1,col="red")
-text(Phast[Phast$P99/Phast$Cells>2 & Phast$P99>3,c(2,3)],pos = 3,cex=0.5,
-     labels = Phast$Name[Phast$P99/Phast$Cells>2 & Phast$P99>3])
+text(Phast[Phast$pvalue<=0.05,c(2,3)],pos = 3,cex=0.5,
+     labels = Phast$ID[Phast$pvalue<=0.05])
 
 plot(Phast[Phast$col==0,c(2,3)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",
      xlab="All FELXIs (% RBP sites)",ylab="Conserved FELXIs (% RBP sites)")
@@ -597,39 +687,47 @@ points(Phast[Phast$col<1 & Phast$col>0,c(2,3)],col="red",cex=1.5)
 points(Phast[Phast$col==1,c(2,3)],col="orange",cex=1.5)
 points(Phast[Phast$col>1,c(2,3)],col="skyblue",cex=1.5)
 abline(0,1,col="red")
-text(Phast[Phast$P99/Phast$Cells>2 & Phast$P99>=2,c(2,3)],pos = 3,cex=0.5,
-     labels = Phast$Name[Phast$P99/Phast$Cells>2 & Phast$P99>=2])
+text(Phast[Phast$pvalue<=0.05,c(2,3)],pos = 3,cex=0.5,
+     labels = Phast$ID[Phast$pvalue<=0.05])
 dev.off()
-rm(list=c("Phast","Phast99"))
+rm(list=c("Phast","Phast99","R_sum"))
 #Fig4B
 pdf("Figures/Fig4B.pdf",height=6,width=12)
 par(mfrow=c(1,2),pty="s",pch=16)
-RBP_fre<-RBP[,c(46,48,49)]
+RBP_fre<-RBP[,c(1,46,48,49)]
 RBP_fre$All_Intron<-RBP$All_Intron-RBP$All_FLEXI
-RBP_fre<-data.frame(prop.table(as.matrix(RBP_fre),margin = 2)*100)
-RBP_fre$Name<-RBP$RBP.name
+R_sum<-colSums(RBP_fre[,2:4])
+RBP_fre$Bpvlue<-1
+RBP_fre$Cpvlue<-1
+for (i in 1:152){
+  RBP_fre[i,5]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,3)],R_sum[c(1,2)]),2,2))$p.value
+  RBP_fre[i,6]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,4)],R_sum[c(1,3)]),2,2))$p.value
+}
+RBP_fre[,2:4]<-data.frame(prop.table(as.matrix(RBP_fre[,2:4]),margin = 2)*100)
 RBP_fre$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
-RBP_fre<-RBP_fre[,c(2,1,3,4,5)]
-plot(RBP_fre[RBP_fre$col==0,1:2],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
+RBP_fre<-RBP_fre[,c(1,3,2,4,5,6,7)]
+plot(RBP_fre[RBP_fre$col==0,2:3],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
      ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
-points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,1:2],col="red",cex=1.5)
-points(RBP_fre[RBP_fre$col==1,1:2],col="orange",cex=1.5)
-points(RBP_fre[RBP_fre$col>1,1:2],col="skyblue",cex=1.5)
-text(RBP_fre[RBP_fre$Cells>4,1:2],labels = RBP_fre$Name[RBP_fre$Cells>4])
+points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,2:3],col="red",cex=1.5)
+points(RBP_fre[RBP_fre$col==1,2:3],col="orange",cex=1.5)
+points(RBP_fre[RBP_fre$col>1,2:3],col="skyblue",cex=1.5)
+text(RBP_fre[(RBP_fre$Bpvlue<=0.05 & (RBP_fre[,2]>=4 | RBP_fre[,3]>=4)),2:3],
+     labels = RBP_fre$RBP.name[RBP_fre$Bpvlue<=0.05& (RBP_fre[,2]>=4 | RBP_fre[,3]>=4)])
 abline(0,1,col="red")
 
-plot(RBP_fre[RBP_fre$col==0,c(3,2)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
+plot(RBP_fre[RBP_fre$col==0,c(4,3)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
      xlab="All RBP binding sites (%)",ylab="FLEXIs (% RBP sites)")
-points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(3,2)],col="red",cex=1.5)
-points(RBP_fre[RBP_fre$col==1,c(3,2)],col="orange",cex=1.5)
-points(RBP_fre[RBP_fre$col>1,c(3,2)],col="skyblue",cex=1.5)
+points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(4,3)],col="red",cex=1.5)
+points(RBP_fre[RBP_fre$col==1,c(4,3)],col="orange",cex=1.5)
+points(RBP_fre[RBP_fre$col>1,c(4,3)],col="skyblue",cex=1.5)
 abline(0,1,col="red")
-text(RBP_fre[RBP_fre$Cells>4,c(3,2)],labels = RBP_fre$Name[RBP_fre$Cells>4])
+text(RBP_fre[(RBP_fre$Cpvlue<=0.05 & (RBP_fre[,4]>=4 | RBP_fre[,3]>=4)),2:3],
+     labels = RBP_fre$RBP.name[RBP_fre$Cpvlue<=0.05& (RBP_fre[,4]>=4 | RBP_fre[,3]>=4)])
 dev.off()
 rm(RBP_fre)
-#Fig4A and S3
+#Fig4A and S7
 #All RBPs by occurrence in FLEXIs (log scale)
-pdf("Figures/FigS3.pdf",height=12,width=12)
+pdf("Figures/FigS7.pdf",height=12,width=12)
 Fun<-read.table("4cell_plasma_RBP_by_FLEXI.counts",col.names=c("Name","RBP_by_FLEXI"))
 Fun<-merge(Fun,RBP[,c(1,4,5,11)],by=1,all.x=T)
 Fun<-Fun[order(Fun$RBP_by_FLEXI,decreasing = T),]
@@ -670,7 +768,7 @@ RBP_53<-RBP_53[,c(1:31,44,32:43)]
 RBP_53[is.na(RBP_53)]<-0
 RBP_53<-RBP_53[,c(TRUE,TRUE,colSums(RBP_53[,3:44])>0)]
 RBP_53[6,27]<-1
-pdf("Figures/Fig6.pdf",width=12,height=8)
+pdf("Figures/Fig6_2.pdf",width=12,height=8)
 par(mfrow=c(3,1),mar = c(5,2,2,20))
 image(1:53,1:16,as.matrix(RBP_53[,18:3]),col=c("white","blue"),bty="n",axes=F,xlab=NA,ylab=NA)
 axis(4,las=2,at = 1:16,labels = colnames(RBP_53)[18:3],tick = FALSE)
@@ -683,11 +781,11 @@ dev.off()
 rm(RBP_53)
 rm(pick)
 rm(SG)
-#FigS5
+#FigS9
 FLEXI_ID<-dat$ID[rowSums(dat[,88:92])>0]
 RBP_info_4cell<-RBP_info[RBP_info$ID%in%FLEXI_ID,]
 FourCellPlasma<-read.delim("4cell_plasma_FLEXI.tsv")
-pdf("Figures/FigS5.pdf",width=8,height=5)
+pdf("Figures/FigS9.pdf",width=8,height=5)
 Splicesome<-c("SF3B4","PRPF8","EFTUD2","BUD13","AQR")
 set_1 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%Splicesome[1]])
 set_2 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%Splicesome[2]])
@@ -834,8 +932,8 @@ for (i in 1:3){
   axis(2,at=seq(0,6,2),labels = NA)
 }
 dev.off()
-#FigS6
-pdf("Figures/FigS6.pdf",width=11,height=8,onefile = T)
+#FigS10
+pdf("Figures/FigS10.pdf",width=11,height=8,onefile = T)
 RBP_list_sig<-c("DKC1","NOLC1","AATF","BCLAF1","GRWD1","SRSF1","TIA1","UCHL5","U2AF1","U2AF2","ZNF622","TRA2A")
 par(mfrow=c(3,4))
 for (i in 1:length(RBP_list_sig)){
@@ -903,5 +1001,126 @@ for (i in 1:length(RBP_list_sig)){
     }
   }
 }
+dev.off()
+
+#FigS1
+#Barplot of profile in all sample (combiend)
+Cell_counts<-read.delim("combined_run.counts")
+Cell_counts$K562<-rowSums(Cell_counts[,c(34:41)])
+Cell_counts$HEK<-rowSums(Cell_counts[,c(42:49)])
+Cell_counts$Hela<-rowSums(Cell_counts[,c(50:59)])
+Cell_counts$UHRR<-rowSums(Cell_counts[,c(26:33)])
+Cell_counts$MCF7<-rowSums(Cell_counts[,c(18:25)])
+Cell_counts$MDA<-rowSums(Cell_counts[,c(16:17)])
+Cell_counts$BC3H<-rowSums(Cell_counts[,c(10:12)])
+Cell_counts$BC4H<-rowSums(Cell_counts[,c(7:9)])
+Cell_counts$BC3<-rowSums(Cell_counts[,c(4:6)])
+Cell_counts$BC4<-rowSums(Cell_counts[,c(13:15)])
+Cell_counts<-Cell_counts[,c(1:3,60:69)]
+Cell_counts<-Cell_counts[rowSums(Cell_counts[,4:13])>0,]
+Cell_counts$Type<-as.factor(Cell_counts$Type)
+Cell_counts<-Cell_counts[Cell_counts$Type!="ERCC",]
+Cell_counts<-Cell_counts[Cell_counts$Type!="SP",]
+levels(Cell_counts$Type)[1]<-levels(Cell_counts$Type)[2]<-levels(Cell_counts$Type)[3]<-levels(Cell_counts$Type)[4]<-levels(Cell_counts$Type)[15]<-"rRNA"
+levels(Cell_counts$Type)[14]<-"Pseudogene"
+levels(Cell_counts$Type)[10]<-"misc RNA"
+levels(Cell_counts$Type)[8]<-"Other lncRNA"
+levels(Cell_counts$Type)[21]<-"VT RNA"
+levels(Cell_counts$Type)[22]<-"Y RNA"
+levels(Cell_counts$Type)[6]<-levels(Cell_counts$Type)[11]<-levels(Cell_counts$Type)[13]<-levels(Cell_counts$Type)[19]<-"Protein coding"
+levels(Cell_counts$Type)[13]<-"snoRNA"
+levels(Cell_counts$Type)[10]<-"MT tRNA"
+Cell_counts$Type<-droplevels(Cell_counts$Type)
+Cell_counts$Type2<-Cell_counts$Type
+levels(Cell_counts$Type)[2]<-levels(Cell_counts$Type)[3]<-levels(Cell_counts$Type)[8]<-"sncRNA"
+levels(Cell_counts$Type)[7]<-levels(Cell_counts$Type)[10]<-levels(Cell_counts$Type)[11]<-"sncRNA"
+levels(Cell_counts$Type)[10]<-levels(Cell_counts$Type)[11]<-"sncRNA"
+rownames(Cell_counts)<-Cell_counts$ID
+agg<-aggregate(.~Type,data=Cell_counts[,c(3:13)],FUN=sum)
+agg.prob<-data.frame(prop.table(as.matrix(agg[,c(2:11)]),2))
+agg.prob$Type=agg$Type
+agg.prob<-agg.prob[c(4,8,3,5,6,2,9,7,1),]
+agg.prob$Type<-as.character(agg.prob$Type)
+colnames(agg.prob)[7:10]<-c("Patient A (Healthy)","Patient B (Healthy)",
+                             "Patient A (Cancer)","Patient B (Cancer)")
+pdf("Figures/FigS1_1.pdf")
+scol <- brewer.pal(9, "Set3")
+mp<-barplot(as.matrix(agg.prob[,1:10]*100),col=scol,axes=F,
+            names.arg=rep(NA,10),width=0.05,space=0.3,
+            legend.text=agg.prob$Type,
+            adj=0.12,args.legend=list(x=1,y=75,bty="n"),xlim=c(0,1.1))
+axis(1,labels=NA,at=c(0,mp,0.68))
+text(mp+0.03, par("usr")[3]-3, labels=colnames(agg.prob[,1:10]),
+     srt=45, pos=2,xpd=TRUE,cex=0.7)
+axis(2,labels=c(0,25,50,75,100),las=1,at=c(0,25,50,75,100),pos=0,cex.axis=0.7)
+dev.off()
+
+dat1<-read.delim("Protein.info.alldataset")
+dat1$Name[7:10]<-c("Patient A (Healthy)","Patient B (Healthy)",
+                             "Patient A (Cancer)","Patient B (Cancer)")
+agg<-dat1[,2:5]
+agg.prob<-data.frame(prop.table(as.matrix(agg),1))
+pdf("Figures/FigS1_2.pdf")
+scol <- c("#6699cc","#999999","#ff9966","#ff9933")
+mp<-barplot(t(agg.prob[1:10,]*100),col=rev(scol),axes=F,
+            names.arg=rep(NA,10),width=0.05,space=0.3,
+            legend.text=c("CDS","UTR","Intron","Intergenic"),
+            adj=0.12,args.legend=list(x=1,y=75,bty="n"),xlim=c(0,1.1))
+axis(1,labels=NA,at=c(0,mp,0.68))
+text(mp+0.03, par("usr")[3]-3, labels=dat1$Name[1:10],
+     srt=45, pos=2,xpd=TRUE,cex=0.7)
+axis(2,labels=c(0,25,50,75,100),las=1,at=c(0,25,50,75,100),pos=0,cex.axis=0.7)
+dev.off()
+rm(list=c("Cell_counts","agg","agg.prob","scol","dat1"))
+
+#FigS3
+dat1<- dat[,26:81]
+sub_mapped_reads<-c(89264248,83532383,95413705,79734689,81242936,90580442,113477444,
+                    106080387,85512006,282545532,93703609,101294649,109704771,97786253,
+                    70563696,83971287,93530133,96188889,84195614,95958499,90154958,
+                    77528755,87438356,80725874,84193148,84695000,79516751,94126936,
+                    80171312,75474477,87388516,82600414,84957488,88141802,95927677,
+                    113807174,87425522,73526698,96566478,71023706,90569418,84985720,
+                    107210447,92506910,88853873,83524969,91268315,83392799,82750963,
+                    62981188,60057226,67704164,86607803,72132500,96955981,64582809)
+dat1<-1e6*t(t(dat1/sub_mapped_reads))
+rownames(dat1)<-dat$ID
+dat1<-data.frame(t(dat1))
+dat1$label<-c(rep(1:4,each=3),rep(5,2),rep(6:9,each=8),rep(10,10))
+dat1$label<-as.factor(dat1$label)
+pick=c(13:56)
+dat2<-dat1[pick,1:8687]
+dat2$label<-dat1$label[pick]
+dat2$label<-droplevels(dat2$label)
+#PCA
+pca<-prcomp(dat2[,1:dim(dat2)[2]-1])
+#t-SNE
+tsne <- Rtsne(dat2[,1:dim(dat2)[2]-1], dims = 2, perplexity=3, theta = 0.5,normalize=F,
+              num_threads=4,verbose=TRUE, max_iter = 5000)
+#ZINB-WaVE
+dat2<-dat[,38:81]
+dat2<-dat2[rowSums(dat2)>0,]
+Fc<-SummarizedExperiment(assays = list(counts = as.matrix(dat2)),
+                         colData = data.frame(label=c(rep(5,2),rep(6:9,each=8),rep(10,10))))
+zinb<-zinbwave(Fc)
+W <- data.frame(reducedDim(zinb))
+W$label<-as.factor(Fc$label)
+
+pdf("Figures/FigS5.pdf",height=6,width=18)
+par(psy="s",mfrow=c(1,3))
+col=c("black","orchid","tomato","royalblue1","greenyellow","goldenrod")
+col<-col2hex(col)
+col<-paste0(col,"A0")
+name<-c("MDA-MB-231","MCF-7","UHRR","K-562","HEK 293T","HeLa S3")
+#plot PCA
+plot(pca$x[,1:2],main="PCA",col=col[dat2$label],
+     xlab=NA,ylab=NA,pch=16)
+legend(1,6,legend = name, col=col,pch=16,bty="n")
+#plot t-SNE
+plot(tsne$Y,main=paste0("t-SNE ",cut_off_title[i]),col=col[dat2$label],
+     xlab=NA,ylab=NA,pch=16)
+#plot ZINB-WaVE
+plot(W$W1,W$W2,main="ZINB-WaVE",col=col[W$label],
+     xlab="W1",ylab="W2",pch=16)
 dev.off()
 ```
