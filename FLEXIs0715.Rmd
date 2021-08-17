@@ -27,6 +27,7 @@ library(cowplot)
 library(ggfortify)
 library(gridGraphics)
 library(VennDiagram)
+library(ComplexHeatmap)
 library(UpSetR)
 set.seed(740714)
 ```
@@ -54,12 +55,18 @@ RBP_info<-separate(RBP_info,col="IID",into=c("IID","GName"),sep="_")
 #Scatter plots (Fig1B and 7B), FLEXIs and host gene counts, not RBP scatter plots
 #subset to get K562, HEK293T, and Hela FLEXI counts
 #Calculate CPM of FLEXIs, by all mapped reads
-FLEXI_CPM<-dat[,c(8,89:91)]
-FLEXI_CPM<-FLEXI_CPM[rowSums(FLEXI_CPM[,2:4])>0,]
+FLEXI_CPM<-dat[,c(1,8,89:91)]
 Unfrag_total<-mapped_reads[8:10]
-FLEXI_CPM[,2:4]<-t(t(FLEXI_CPM[,2:4])/Unfrag_total)
+FLEXI_CPM[,3:5]<-t(t(FLEXI_CPM[,3:5])/Unfrag_total)
 #Assign log2CPM of -10 for those with 0 count
-FLEXI_CPM[FLEXI_CPM==0]<-2^-10
+FLEXI_CPM$K562_repo<-rowMedians(as.matrix(dat[,56:63]))>0
+FLEXI_CPM$HEK_repo<-rowMedians(as.matrix(dat[,64:71]))>0
+FLEXI_CPM$Hela_repo<-rowMedians(as.matrix(dat[,72:81]))>0
+FLEXI_CPM<-FLEXI_CPM[rowSums(FLEXI_CPM[,3:5])>0,]
+temp<-FLEXI_CPM[,3:5]
+temp[temp==0]<-2^-10
+FLEXI_CPM[,3:5]<-temp
+FLEXI_CPM<-FLEXI_CPM[,2:8]
 #Calculate CPM of Unfragmented cellular RNA
 Cell_counts<-read.delim("combined_run.counts")
 Cell_counts$K562<-rowSums(Cell_counts[,c(34:41)])
@@ -76,7 +83,7 @@ Cell_counts[Cell_counts==0]<-2^-10
 ```
 ```{r}
 postscript("Figures/Fig1B.eps",width = 15,height=10,horizontal = F)
-par(pch=16,mfrow=c(2,3),pty="s")
+par(pch=16,mfcol=c(2,3),pty="s")
 #FLEXIs scatter
 #FELXIs between K562 and HeLa
 FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,4]==2^-10),]
@@ -85,20 +92,14 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
 text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
-#FELXIs between HEK and HeLa
-FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,3]==2^-10 & FLEXI_CPM[,4]==2^-10),]
-plot(log2(FLEXI_by_GID[,c(3,4)]),xlim=c(-10,5),ylim=c(-10,5))
-abline(0,1,col="red")
-cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
-cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
-text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
-#FELXIs between K562 and HEK
-FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,3]==2^-10),]
-plot(log2(FLEXI_by_GID[,c(2,3)]),xlim=c(-10,5),ylim=c(-10,5))
-abline(0,1,col="red")
-cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "spearman"),digits=2, format="f")
-cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
-text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562>=0.03 &
+                      FLEXI_by_GID$Hela==2^-10 &
+                      FLEXI_by_GID$K562_repo,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela>=0.03 &
+                      FLEXI_by_GID$K562==2^-10 &
+                      FLEXI_by_GID$Hela_repo,]
+points(log2(sig.y[,c(2,4)]),col="red")
+points(log2(sig.x[,c(2,4)]),col="blue")
 #Unfrag scatter
 #FELXIs between K562 and HeLa
 FLEXI_by_GID<-Cell_counts[!(Cell_counts[,2]==2^-10 & Cell_counts[,4]==2^-10),]
@@ -107,6 +108,33 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
 text(10,-5,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+sig.x<-unique(sig.x$GID)
+sig.y<-unique(sig.y$GID)
+sig.all<-intersect(sig.x,sig.y)
+sig.x<-setdiff(sig.x,sig.y)
+sig.y<-setdiff(sig.y,sig.all)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(2,4)]),col="red")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,4)]),col="blue")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(2,4)]),col="green")
+
+
+#FLEXIs scatter
+#FELXIs between HEK and HeLa
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,3]==2^-10 & FLEXI_CPM[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(3,4)]),xlim=c(-10,5),ylim=c(-10,5))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$HEK>=0.03 &
+                      FLEXI_by_GID$Hela==2^-10 &
+                      FLEXI_by_GID$HEK_repo,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela>=0.03 &
+                      FLEXI_by_GID$HEK==2^-10 &
+                      FLEXI_by_GID$Hela_repo,]
+points(log2(sig.y[,c(3,4)]),col="red")
+points(log2(sig.x[,c(3,4)]),col="blue")
+#Unfrag scatter
 #FELXIs between HEK and HeLa
 FLEXI_by_GID<-Cell_counts[!(Cell_counts[,3]==2^-10 & Cell_counts[,4]==2^-10),]
 plot(log2(FLEXI_by_GID[,c(3,4)]),xlim=c(-10,15),ylim=c(-10,15))
@@ -114,6 +142,32 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
 text(10,-5,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+sig.x<-unique(sig.x$GID)
+sig.y<-unique(sig.y$GID)
+sig.all<-intersect(sig.x,sig.y)
+sig.x<-setdiff(sig.x,sig.y)
+sig.y<-setdiff(sig.y,sig.all)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(3,4)]),col="red")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(3,4)]),col="blue")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(3,4)]),col="green")
+
+#FELXIs between K562 and HEK
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,3]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,3)]),xlim=c(-10,5),ylim=c(-10,5))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562>=0.03 &
+                      FLEXI_by_GID$HEK==2^-10 &
+                      FLEXI_by_GID$K562_repo,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$HEK>=0.03 &
+                      FLEXI_by_GID$K562==2^-10 &
+                      FLEXI_by_GID$HEK_repo,]
+points(log2(sig.y[,c(2,3)]),col="red")
+points(log2(sig.x[,c(2,3)]),col="blue")
+
+#Unfrag scatter
 #FELXIs between K562 and HEK
 FLEXI_by_GID<-Cell_counts[!(Cell_counts[,2]==2^-10 & Cell_counts[,3]==2^-10),]
 plot(log2(FLEXI_by_GID[,c(2,3)]),xlim=c(-10,15),ylim=c(-10,15))
@@ -121,9 +175,14 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
 text(10,-5,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+sig.x<-unique(sig.x$GID)
+sig.y<-unique(sig.y$GID)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(2,3)]),col="red")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,3)]),col="blue")
 dev.off()
 #remove the temporay object created for this plot
-rm(list=c("Cell_counts","FLEXI_by_GID","FLEXI_CPM","cor_p","cor_s","Unfrag_total","GID_list"))
+rm(list=c("Cell_counts","FLEXI_by_GID","FLEXI_CPM","cor_p","cor_s",
+          "Unfrag_total","GID_list","sig.x","sig.y"."sig.all"))
 
 #Scatter plots in Fig7B
 #Make reproducibility marker (detected in ≥ 50% of dataset)
@@ -268,7 +327,7 @@ legend(20,0.08,lty=c(1,1),lwd=1,col=c("black","red"),
 dev.off()
 #remove objects
 rm(list=c("combined","per_dat","i","name"))
-#Density plot,Fig1C right 4 panels
+#Density plot,Fig1C right 3 panels
 pdf("Figures/Fig1C_2.pdf",width=12,height=12)
 col=c("red","orchid","black")
 #length
@@ -1099,8 +1158,8 @@ tsne <- Rtsne(dat2[,1:dim(dat2)[2]-1], dims = 2, perplexity=3, theta = 0.5,norma
               num_threads=4,verbose=TRUE, max_iter = 5000)
 #ZINB-WaVE
 dat3<-dat[,38:81]
-dat3<-dat3[rowSums(dat2)>0,]
-Fc<-SummarizedExperiment(assays = list(counts = as.matrix(dat2)),
+dat3<-dat3[rowSums(dat3)>0,]
+Fc<-SummarizedExperiment(assays = list(counts = as.matrix(dat3)),
                          colData = data.frame(label=c(rep(5,2),rep(6:9,each=8),rep(10,10))))
 zinb<-zinbwave(Fc)
 W <- data.frame(reducedDim(zinb))

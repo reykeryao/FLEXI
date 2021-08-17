@@ -11,6 +11,21 @@ library(ggfortify)
 library(gridGraphics)
 library(VennDiagram)
 library(UpSetR)
+library(ComplexHeatmap)
+library(DESeq2)
+library("Rtsne")
+library("umap")
+library(zinbwave)
+library(cluster)
+library("dendextend")
+library("reshape2")
+library("purrr")
+library("dplyr")
+library(fpc)
+library(circlize)
+setwd("Documents/NGS/full_length_intron/Paper/FLEXI_git/")
+load("../FLEXI.image")
+
 
 dat<-read.delim("all.FLEXI")
 mapped_reads<-c(305.069837,251.558067,268.210336,477.543790,207.491024,
@@ -237,6 +252,33 @@ for (i in 1:4){
   lines(density(per_dat$Per[per_dat$nonFLEXI==1]),lwd=1,col=col[6])
 }
 dev.off()
+#histogram version
+# temp, stll working
+pdf("Figures/FigS4B_his.pdf",width=10,height=10)
+par(mfrow=c(2,2))
+for (i in 1:4){
+  per_dat<-read.delim(gzfile(paste0(name[i],".per.info.gz")))
+  if (i==1){
+    p1 <- hist(per_dat$Per[per_dat$nonFLEXI!=1])
+    p2 <- hist(per_dat$Per[per_dat$nonFLEXI==1])   
+    plot( p1, col=rgb(0,0,1,1/4), xlim=c(0,100),main=NA,xlab="Length (% of intron)",ylab="Reads")
+    plot( p2, col=rgb(1,0,0,1/4), xlim=c(0,100), add=T)
+    legend(20,0.28,lty=c(1,1,1,1,1,1),lwd=1,col=col,
+           legend = c("AGO","DICER","Core spliceosome RBPs","Other RBPs",
+                      "FLEXIs w/o RBP","Other short introns"),bty="n")
+    combined<-per_dat
+  } else {
+    plot(density(per_dat$Per[per_dat$AGO==1]),bty="n",lwd=1, ylim=c(0,0.15),xlim=c(0,100),main=name[i],
+         xlab="Length (%)",col=col[1])
+    combined<-rbind(combined,per_dat)
+  }
+  lines(density(per_dat$Per[per_dat$DICER==1]),lwd=1,col=col[2])
+  lines(density(per_dat$Per[per_dat$SPLICE==1]),lwd=1,col=col[3])
+  lines(density(per_dat$Per[per_dat$RBP_other==1]),lwd=1,col=col[4])
+  lines(density(per_dat$Per[per_dat$nonRBP==1]),lwd=1,col=col[5])
+  lines(density(per_dat$Per[per_dat$nonFLEXI==1]),lwd=1,col=col[6])
+}
+dev.off()
 
 #combined cellular RNA, density plot of FLEXIs vs other short intron, Fig1C left panel
 pdf("Figures/Fig1C_1.pdf")
@@ -245,6 +287,14 @@ plot(density(combined$Per[combined$nonFLEXI==1]),bty="n",lwd=1, ylim=c(0,0.1),xl
 lines(density(combined$Per[combined$nonFLEXI!=1]),lwd=1,col="red")
 legend(20,0.08,lty=c(1,1),lwd=1,col=c("red","black"),
            legend = c("Other short introns","FLEXIs"),bty="n")
+dev.off()
+pdf("Figures/Fig1C_1h.pdf")
+p1 <- hist(combined$Per[combined$nonFLEXI!=1]) 
+p2 <- hist(combined$Per[combined$nonFLEXI==1])   
+plot( p1, col=rgb(0,0,1,1/4), xlim=c(0,100),main=NA,xlab="Length (% of intron)",ylab="Reads")
+plot( p2, col=rgb(1,0,0,1/4), xlim=c(0,100), add=T)
+legend(0,140000,legend = c("FLEXIs","Other short introns"),bty="n",
+       fill =c(rgb(0,0,1,1/4),rgb(1,0,0,1/4),pch=15))
 dev.off()
 #remove objects
 rm(list=c("combined","per_dat","i","name"))
@@ -380,35 +430,43 @@ rm(list=c("set_1","set_2","set_3","set_4","set_5","set","vennplot1","vennplot2")
 
 #Fig1A, upset plot of FLEXIs, FLEXI host genes from cellular RNA and plasma
 #FLEXIs
-cut_off=1
-set_1 <- as.character(dat$ID[dat$UHRR>=cut_off])
-set_2 <- as.character(dat$ID[dat$K562>=cut_off])
-set_3 <- as.character(dat$ID[dat$HEK>=cut_off])
-set_4 <- as.character(dat$ID[dat$Hela>=cut_off])
-set_5 <- as.character(dat$ID[dat$Plasma>=cut_off])
-set <- list ("UHRR"=set_1,
-             "K-562"=set_2,"HEK 293T"=set_3,
-             "Hela S3"=set_4,"Plasma"=set_5)
-m = make_comb_mat(set)
-postscript("Figures/Fig1A_1.eps",height=4,width=8)
-UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
-      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
-dev.off()
-#FLEXI host genes
-set_1 <- unique(dat$GID[dat$UHRR>=cut_off])
-set_2 <- unique(dat$GID[dat$K562>=cut_off])
-set_3 <- unique(dat$GID[dat$HEK>=cut_off])
-set_4 <- unique(dat$GID[dat$Hela>=cut_off])
-set_5 <- unique(dat$GID[dat$Plasma>=cut_off])
-set <- list ("UHRR"=set_1,
-             "K-562"=set_2,"HEK 293T"=set_3,
-             "Hela S3"=set_4,"Plasma"=set_5)
-m = make_comb_mat(set)
-postscript("Figures/Fig1A_2.eps",height=4,width=8)
-UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
-      comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
-dev.off()
-rm(list=c("set_1","set_2","set_3","set_4","set_5","set","m","cut_off"))
+cutoff<-c(0,0.01,0.05,0.1,0.5)
+dat<-read.delim("all.FLEXI")
+mapped_reads<-c(305.069837,251.558067,268.210336,477.543790,207.491024,
+                692.091831,666.341854,713.775291,715.241521,768.433748,71.116246)
+names(mapped_reads)<-colnames(dat[,82:92])
+for (i in 1:5){
+  set_1 <- as.character(dat$ID[dat$UHRR/mapped_reads[7]>=cutoff[i] & dat$UHRR>0])
+  set_2 <- as.character(dat$ID[dat$K562/mapped_reads[8]>=cutoff[i] & dat$K562>0])
+  set_3 <- as.character(dat$ID[dat$HEK/mapped_reads[9]>=cutoff[i] & dat$HEK>0])
+  set_4 <- as.character(dat$ID[dat$Hela/mapped_reads[10]>=cutoff[i] & dat$Hela>0])
+  set_5 <- as.character(dat$ID[dat$Plasma/mapped_reads[11]>=cutoff[i] & dat$Plasma>0])
+  set <- list ("UHRR"=set_1,
+               "K-562"=set_2,"HEK 293T"=set_3,
+               "Hela S3"=set_4,"Plasma"=set_5)
+  m = make_comb_mat(set)
+  fil_name<-paste0("temp_fig/Fig1A_",cutoff[i],"RPM.eps")
+  postscript(fil_name,height=4,width=8)
+  UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
+        comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
+  dev.off()
+  #FLEXI host genes
+  set_1 <- unique(dat$GID[dat$UHRR/mapped_reads[7]>=cutoff[i] & dat$UHRR>0])
+  set_2 <- unique(dat$GID[dat$K562/mapped_reads[8]>=cutoff[i] & dat$K562>0])
+  set_3 <- unique(dat$GID[dat$HEK/mapped_reads[9]>=cutoff[i] & dat$HEK>0])
+  set_4 <- unique(dat$GID[dat$Hela/mapped_reads[10]>=cutoff[i] & dat$Hela>0])
+  set_5 <- unique(dat$GID[dat$Plasma/mapped_reads[11]>=cutoff[i] & dat$Plasma>0])
+  set <- list ("UHRR"=set_1,
+               "K-562"=set_2,"HEK 293T"=set_3,
+               "Hela S3"=set_4,"Plasma"=set_5)
+  m = make_comb_mat(set)
+  fil_name<-paste0("temp_fig/Fig1A_",cutoff[i],"RPM_G.eps")
+  postscript(fil_name,height=4,width=8)
+  UpSet(m,set_order=c("UHRR","K-562","HEK 293T","Hela S3","Plasma"),
+        comb_col = c("tomato","royalblue1","goldenrod","orchid","black")[comb_degree(m)])
+  dev.off()
+}
+rm(list=c("set_1","set_2","set_3","set_4","set_5","set","m"))
 
 #Fig7A and FigS7, FLEXI by 0 cutoff and ≥ 0.01 RPM FLEXIs
 cut_off=0.01
@@ -1008,7 +1066,7 @@ legend(70,0.4,lty=1,col=scol[1:4],legend = c("UHRR","K-562","HEK 293T","HeLa S3"
 dev.off()
 
 
-library(DESeq2)
+
 dat<-read.delim("all.FLEXI",row.names = 1)
 dat<-dat[,25:80]
 dat$Type="FELXI"
@@ -1116,7 +1174,7 @@ dev.off
 
 
 #try t-sne
-library("Rtsne")
+
 dat1<- dat[,26:81]
 sub_mapped_reads<-c(89264248,83532383,95413705,79734689,81242936,90580442,113477444,
                     106080387,85512006,282545532,93703609,101294649,109704771,97786253,
@@ -1195,7 +1253,9 @@ legend(0,6,
        legend = name, col=col,pch=16,bty="n")
 dev.off()
 
-library("umap")
+
+pdf("../Pass1_IGV/Umap.pdf",height=4,width=4)
+par(pty="s")
 custom.settings = umap.defaults
 custom.settings$n_neighbors<-6
 custom.settings$min_dist<-0.01
@@ -1204,8 +1264,8 @@ FLEXIumap<-data.frame(FLEXIumap$layout)
 FLEXIumap$label<-dat2$label
 plot(FLEXIumap[,1:2],main="UMAP",col=col[FLEXIumap$label],
      xlab="W1",ylab="W2",pch=16)
+dev.off()
 
-library(zinbwave)
 pick=c(13:56)
 dat2<-dat[,38:81]
 dat2<-dat2[rowSums(dat2)>0,]
@@ -1453,7 +1513,1185 @@ for (i in 1:4){
 }
 dev.off()
 
+# Venn for Alan
+
+pdf(paste0("Figures/Fig3B.pdf"),width=12,height=6)
+#venn diagram of agotrons (including mirtron)
+set_1 <- as.character(dat$ID[dat$UHRR>0])
+set_2 <- as.character(dat$ID[dat$K562>0])
+set_3 <- as.character(dat$ID[dat$HEK>0])
+set_4 <- as.character(dat$ID[dat$Hela>0])
+set_5 <- as.character(dat$ID[dat$Plasma>0])
+set <- list ("UHRR"=set_1,"K-562"=set_2,"HEK 293T"=set_3,"Hela S3"=set_4,"Plasma"=set_5)
+vennplot1 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5],
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+#venn diagram of mirtrons (including agotron)
+set_1 <- as.character(dat$ID[dat$MDA>0])
+set_2 <- as.character(dat$ID[dat$MCF7>0])
+set_3 <- as.character(dat$ID[dat$BC3>0])
+set_4 <- as.character(dat$ID[dat$BC4>0])
+set_5 <- as.character(dat$ID[dat$Plasma>0])
+set <- list ("MDA-MB-231"=set_1,"MCF7"=set_2,"PatientA"=set_3,"PatientB"=set_4,"Plasma"=set_5)
+vennplot2 <- venn.diagram (set, filename=NULL,category.names=names(set),
+                           cat.col = col[1:5],
+                           fill = col[1:5],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(0,0,180,180,0),
+                           main.cex=1, cat.cex = 1) 
+ggarrange(vennplot1, vennplot2,nrow = 1,ncol=2)
+dev.off()
+#cleanup Veen log file
+unlink("*.log")
+
+all_CPM<-dat[,c(1:25,93,82:92)]
+all_CPM[,27:37]<-t(t(all_CPM[,27:37])/mapped_reads)
+common<-intersect(set_5,intersect(set_1,intersect(set_2,intersect(set_3,set_4))))
+non_common<-setdiff(set_5,union(set_1,union(set_2,union(set_3,set_4))))
+write.table(rbind(all_CPM[all_CPM$ID%in%common,c(1,7,10,11,13,14,17,20:26,29:32,37)],
+                  all_CPM[all_CPM$ID%in%non_common,c(1,7,10,11,13,14,17,20:26,29:32,37)]),
+            "../Old/Table_Plasma_commonCancer.tsv",quote=F,row.names=F,sep="\t")
+rm(list=c("set_1","set_2","set_3","set_4","set_5","set","vennplot1","vennplot2"))
+
+#reproduciable
+dat<-read.delim("all.FLEXI")
+dat1<-read.delim("../../Old_UF_fragmented/full_length_intron.counts")
+dat<-dat[rowSums(dat[,38:81])>0,c(1,38:81)]
+colnames(dat)<-c("ID",paste0("MDA_",1:2),paste0("MCF_",1:8),
+                 paste0("UHRR_",1:8),paste0("K561_2_",1:8),
+                 paste0("HEK_2_",1:8),paste0("Hela",1:10))
+colnames(dat1)<-c("ID",paste0("HEK_1_",1:2),paste0("K562_1_",1:7))
+dat<-merge(dat,dat1,by="ID",all=T)
+dat<-dat[,c(1:19,36:45,20:35,48:54,46:47)]
+dat[is.na(dat)]<-0
+sub_mapped_reads<-c(109704771,97786253,
+                    70563696,83971287,93530133,96188889,84195614,95958499,90154958,77528755,
+                    87438356,80725874,84193148,84695000,79516751,94126936,80171312,75474477,
+                    91268315,83392799,82750963,62981188,60057226,67704164,86607803,72132500,96955981,64582809,
+                    87388516,82600414,84957488,88141802,95927677,113807174,87425522,73526698,
+                    96566478,71023706,90569418,84985720,107210447,92506910,88853873,83524969,
+                    5700094,7258578,6925758,5408190,6342889,6941957,9282711,
+                    99564097,81230668)
+sub_mapped_reads<-sub_mapped_reads/1e6
+'''
+dat$K562B2_repro<-dat$K562B1_repro<-dat$HEKB2_repro<-dat$HEKB1_repro<-0
+dat$K562B2_over<-dat$K562B1_over<-dat$HEKB2_over<-dat$HEKB1_over<-0
+cutoff=3
+#more than half of the dataset has FLEXIs  greater/equal than cutoff
+dat[rowSums(dat[,2:3]>=cutoff)>1,27]<-1
+dat[rowSums(dat[,4:11]>=cutoff)>3,28]<-1
+dat[rowSums(dat[,12:18]>=cutoff)>3,29]<-1
+dat[rowSums(dat[,19:26]>=cutoff)>3,30]<-1
+#total number of reads greater/equal than cutoff
+dat[rowSums(dat[,2:3])>=cutoff,31]<-1
+dat[rowSums(dat[,4:11])>=cutoff,32]<-1
+dat[rowSums(dat[,12:18])>=cutoff,33]<-1
+dat[rowSums(dat[,19:26])>=cutoff,34]<-1
+col=c("tomato","royalblue1","greenyellow","goldenrod","orchid","black")
+pdf("../../Old_UF_fragmented/Venn_FLEXI.pdf")
+set_1 <- as.character(dat$ID[dat$HEKB1_repro>0])
+set_2 <- as.character(dat$ID[dat$HEKB2_repro>0])
+set_3 <- as.character(dat$ID[dat$K562B1_repro>0])
+set_4 <- as.character(dat$ID[dat$K562B2_repro>0])
+set_5 <- as.character(dat$ID[dat$HEKB1_over>0])
+set_6 <- as.character(dat$ID[dat$HEKB2_over>0])
+set_7 <- as.character(dat$ID[dat$K562B1_over>0])
+set_8 <- as.character(dat$ID[dat$K562B2_over>0])
+
+set_repo <- list ("HEK 293T (Batch1)"=set_1,"HEK 293T (Batch2)"=set_2,
+             "K-562 (Batch1)"=set_3,"K-562 (Batch2)"=set_4)
+set_over <- list ("HEK 293T (Batch1)"=set_5,"HEK 293T (Batch2)"=set_6,
+                  "K-562 (Batch1)"=set_7,"K-562 (Batch2)"=set_8)
+vennplot1 <- venn.diagram (set_repo[1:2], filename=NULL,category.names=names(set_repo)[1:2],
+                           cat.col = col[1:2],
+                           fill = col[1:2],
+                           height = 300, width = 300, units = "px",
+                           cex = 1,cat.pos=c(180,180),
+                           main.cex=1, cat.cex = 1) 
+vennplot2 <- venn.diagram (set_repo[3:4], filename=NULL,category.names=names(set_repo)[3:4],
+                           cat.col = col[1:2],
+                           fill = col[1:2],cat.pos=c(180,180),
+                           height = 300, width = 300, units = "px",
+                           cex = 1,
+                           main.cex=1, cat.cex = 1) 
+vennplot3 <- venn.diagram (set_over[1:2], filename=NULL,category.names=names(set_repo)[1:2],
+                           cat.col = col[1:2],
+                           fill = col[1:2],cat.pos=c(180,180),
+                           height = 300, width = 300, units = "px",
+                           cex = 1,
+                           main.cex=1, cat.cex = 1) 
+vennplot4 <- venn.diagram (set_over[3:4], filename=NULL,category.names=names(set_repo)[3:4],
+                           cat.col = col[1:2],
+                           fill = col[1:2],cat.pos=c(180,180),
+                           height = 300, width = 300, units = "px",
+                           cex = 1,
+                           main.cex=1, cat.cex = 1) 
+
+ggarrange(vennplot1, vennplot2,vennplot3, vennplot4,nrow = 2,ncol=2)
+
+dev.off()
+#cleanup Veen log file
+unlink("*.log")
+'''
+
+#renumbering based on cutoff, cutoff is based on combined date (rowSums), 
+# but applied to individual replicates.
+# MDA 2:3
+# MCF 4:11
+# UHRR 12:19
+# Hela 20:29
+# K562 batch 2 (newer) 30:37;  batch 1 46:52
+# HEK batch 2 (newer) 38:45; batch 1 53:54
+#cut off by RPM, 0.01,0.05,0.1,and 0.5
+cutoff=c(0,0.01)
+P_pch=c(16,17)
+dat<-read.delim("all.FLEXI")
+dat1<-read.delim("../../Old_UF_fragmented/full_length_intron.counts")
+dat<-dat[rowSums(dat[,38:81])>0,c(1,38:81)]
+colnames(dat)<-c("ID",paste0("MDA_1_",1:2),paste0("MCF_",1:8),
+                 paste0("UHRR_1_",1:8),paste0("K561_1_",1:8),
+                 paste0("HEK_1_",1:8),paste0("Hela_",1:10))
+dat1<-dat1[,c(1:15,19:28)]
+colnames(dat1)<-c("ID",paste0("HEK_2_",1:2),paste0("K562_2_",1:7),
+                  paste0("MDA_2_",1:5),paste0("UHRR_2_",1:10))
+dat<-merge(dat,dat1,by="ID",all=T)
+dat[is.na(dat)]<-0
+dat<-dat[rowSums(dat[,2:69])>0,]
+dat<-dat[,c(1,4:11,36:45,2:3,12:35,55:69,48:54,46:47)]
+sub_mapped_reads<-c(70563696,83971287,93530133,96188889,84195614,95958499,90154958,77528755,
+                    91268315,83392799,82750963,62981188,60057226,67704164,86607803,72132500,96955981,64582809,
+                    109704771,97786253,
+                    87438356,80725874,84193148,84695000,79516751,94126936,80171312,75474477,
+                    87388516,82600414,84957488,88141802,95927677,113807174,87425522,73526698,
+                    96566478,71023706,90569418,84985720,107210447,92506910,88853873,83524969,
+                    37067082,55224062,52426381,46851911,67555020,
+                    21744662,38212559,35376687,35131499,40724358,38938071,37683086,38933929,38267462,34349980,
+                    5700094,7258578,6925758,5408190,6342889,6941957,9282711,
+                    99564097,81230668)
+sub_mapped_reads<-sub_mapped_reads/1e6
+dat_clus<-dat
+
+dat<-dat_clus
+dat1<-data.frame(t(dat[,c(20:69)]))
+dat1$label<-c(rep("MDA",2),rep("UHRR",8),rep("K562",8),rep("HEK",8),
+              rep("MDA",5),rep("UHRR",10),rep("K562",7),rep("HEK",2))
+dat1$batch<-c(rep("1",26),rep("2",24))
+dat1$label<-factor(dat1$label)
+dat1$batch<-factor(dat1$batch)
+
+col=c("black","royalblue1","goldenrod","orchid","greenyellow","tomato")
+col<-col2hex(col)
+col<-paste0(col,"A0")
+name<-c("MCF-7","HeLa S3","MDA-MB-231","UHRR","K-562","HEK 293T")
+
+for (i in 1:2){
+  pdf_name<-paste0("temp_fig/cluster",cutoff[i],"RPM.pdf")
+  pdf(pdf_name,height=9,width=9)
+  par(pty="s",mfrow=c(3,3))
+  #44 dataset
+  obj_name<-paste0("44_zinbwave",cutoff[i],"RPM.pbj")
+  dat<-dat_clus
+  dat<-dat[rowMaxs(t(t(as.matrix(dat[,2:45]))/sub_mapped_reads[1:44]))>=cutoff[i],2:45]
+  dat<-dat[rowSums(dat)>0,]
+  #PCA
+  pca_dat<-data.frame(t(dat/sub_mapped_reads[1:44]))
+  pca_dat$label<-c(rep(1,8),rep(2,10),rep(3,2),rep(4:6,each=8))
+  pca_dat$label<-as.factor(pca_dat$label)
+  pca<-prcomp(pca_dat[,1:(dim(pca_dat)[2]-1)])
+  plot(pca$x[,1:2],col=col[pca_dat$label],main="PCA",
+       xlab="PC1",ylab="PC2",pch=16,cex=1.5)
+  legend(0,4,legend = name,col=col,pch=16,bty="n")
+  #t-SNE
+  tsne <- Rtsne(pca_dat[,1:dim(pca_dat)[2]-1], dims = 2, perplexity=4, theta = 0.5,normalize=F,
+                num_threads=4,verbose=TRUE, max_iter = 5000)
+  plot(tsne$Y,main="t-SNE ",col=col[pca_dat$label],
+       xlab="t-SNE1",ylab="t-SNE2",pch=16,cex=1.5)
+  #ZINB-WaVE
+  zinb<-readRDS(obj_name)
+  W <- data.frame(reducedDim(zinb))
+  W$label<-pca_dat$label
+  plot(W$W1,W$W2,main="ZINB-WaVE",col=col[W$label],
+       xlab="W1",ylab="W2",pch=16,cex=1.5)
+  #biological replicate
+  dat<-dat_clus
+  dat<-dat[rowMaxs(t(t(as.matrix(dat[,20:69]))/sub_mapped_reads[19:68]))>=cutoff,20:69]
+  dat<-as.matrix(dat[rowSums(dat)>0,])
+  
+  #without batch correction
+  BR_col<-col[c(6,5,3,4)]
+  obj_name<-paste0("Bio_rep_zinbwave",cutoff[i],"RPM.pbj")
+  #PCA
+  pca_dat<-data.frame(t(dat/sub_mapped_reads[19:68]))
+  pca_dat$label<-dat1$label
+  pca_dat$batch<-dat1$batch
+  pca_dat$label<-factor(pca_dat$label)
+  pca_dat$batch<-factor(pca_dat$batch)
+  pca<-prcomp(pca_dat[,1:(dim(pca_dat)[2]-2)])
+  plot(pca$x[,1:2],col=BR_col[pca_dat$label],main="PCA",
+       xlab="PC1",ylab="PC2",pch=P_pch[pca_dat$batch],cex=1.5)
+  
+  #t-SNE
+  tsne <- Rtsne(dat1[,1:(dim(dat1)[2]-2)], dims = 2,
+                perplexity=8, theta = 0.5,normalize=F,
+                num_threads=4,verbose=TRUE, max_iter = 5000)
+  plot(tsne$Y,  main="t-SNE",col=BR_col[pca_dat$label],pch=P_pch[pca_dat$batch],
+       xlab="t-SNE1",ylab="t-SNE2",cex=1.5)
+  #ZINB-Wave w/o batch correction
+  zinb<-readRDS(obj_name)
+  W <- data.frame(reducedDim(zinb))
+  W$label<-pca_dat$label
+  W$batch<-pca_dat$batch
+  plot(W$W1,W$W2,main="ZINB-WaVE (batch effect corrected)",col=BR_col[W$label],pch=P_pch[W$batch],
+       xlab="W1",ylab="W2",cex=1.5)
+  #ZINB-WaVE-batch corrected
+  obj_name<-paste0("Bio_rep_zinbwave_Batch_cor_",cutoff[i],"RPM.pbj")
+  zinb<-readRDS(obj_name)
+  W <- data.frame(reducedDim(zinb))
+  W$label<-pca_dat$label
+  W$batch<-pca_dat$batch
+  #PCA using ZINB-wave batch corrected normalized counts
+  pca_dat<-data.frame(t(assays(zinb)$normalizedValues))
+  pca_dat$label<-dat1$label
+  pca_dat$batch<-dat1$batch
+  pca_dat$label<-factor(pca_dat$label)
+  pca_dat$batch<-factor(pca_dat$batch)
+  pca<-prcomp(pca_dat[,1:(dim(pca_dat)[2]-2)])
+  plot(pca$x[,1:2],col=BR_col[pca_dat$label],main="PCA",
+       xlab="PC1",ylab="PC2",pch=P_pch[pca_dat$batch],cex=1.5)
+  ##t-SNE after batch correction
+  tsne <- Rtsne(W[,1:2], dims = 2,pca=F,
+                perplexity=8, theta = 0.5,
+                num_threads=4,verbose=TRUE, max_iter = 5000)
+  plot(tsne$Y,  main="t-SNE (batch effect corrected)",col=BR_col[W$label],pch=P_pch[W$batch],
+       xlab="t-SNE1",ylab="t-SNE2",cex=1.5)
+  #zinb-wave batch corrrection
+  plot(W$W1,W$W2,main="ZINB-WaVE (batch effect corrected)",col=BR_col[W$label],pch=P_pch[W$batch],
+       xlab="W1",ylab="W2",cex=1.5)
+  legend(-2,1,legend = levels(W$label),col=BR_col,pch=16,bty="n")
+  dev.off()
+  }
+
+#alternate Fig1D without 1 read FLEXI
+
+pdf("temp_fig/Fig1EV2.pdf",onefile = T,width=8,height=12)
+par(mfrow=c(3,2),lwd=1.5)
+D_height<-c(2,2,2,2,2)
+for (i in c(88:92)){
+  plot(density(log10(dat[dat[,i]>1 & dat$Is_agotron!=".",i]/mapped_reads[i-81])),bty="n",xlab="RPM",
+       xlim=c(-4,4),ylim=c(0,D_height[i-87]),main=colnames(dat)[i],col="deepskyblue2",axes=F)
+  lines(density(log10(dat[dat[,i]>1 & dat$Is_mirtron!=".",i]/mapped_reads[i-81])),col="firebrick2")
+  lines(density(log10(dat[dat[,i]>1 & dat$Is_mirtron=="." & dat$Is_agotron=="." & dat$Has_snoRNA==".",
+                          i]/mapped_reads[i-81])),col="black")
+  if (i<92){
+    lines(density(log10(dat[dat[,i]>1 & dat$Has_snoRNA!=".",i]/mapped_reads[i-81])),col="goldenrod")
+  }
+  lines(density(log10(snoRNA[snoRNA[,i-80]>1,i-80]/mapped_reads[i-81])),col="goldenrod",lty=4)
+  if (i==88){
+    legend(0,1.5,bty="n",legend = c("Other FLEXIs", "Agotron","Mirtron","snoRNA FLEXIs","snoRNAs"),
+           col=c("black","firebrick2","deepskyblue2","goldenrod","goldenrod"),
+           lty=c(1,1,1,1,4),lwd=1.5)
+  }
+  if (D_height[i-87]==2){
+    axis(2,labels=seq(0,2,1),las=1,at=seq(0,2,1),las=2)
+  } else {
+    axis(2,labels=seq(0,1.5,0.5),las=1,at=seq(0,1.5,0.5),las=2)
+  }
+  
+  axis(1,labels=c(parse(text='10^-4'),bquote(10^-3),bquote(10^-2),bquote(10^-1),1,10,bquote(10^2),bquote(10^3),
+                  bquote(10^4)),
+       at=seq(-4,4,1))
+}
+dev.off()
+
+
+pdf("temp_fig/Fig1EV1.pdf",onefile = T,width=8,height=12)
+par(mfrow=c(3,2),lwd=1.5)
+D_height<-c(2,2,2,2,2)
+for (i in c(88:92)){
+  plot(density(log10(dat[dat[,i]>0 & dat$Is_agotron!=".",i]/mapped_reads[i-81])),bty="n",xlab="RPM",
+       xlim=c(-4,4),ylim=c(0,D_height[i-87]),main=colnames(dat)[i],col="deepskyblue2",axes=F)
+  lines(density(log10(dat[dat[,i]>0 & dat$Is_mirtron!=".",i]/mapped_reads[i-81])),col="firebrick2")
+  lines(density(log10(dat[dat[,i]>0 & dat$Is_mirtron=="." & dat$Is_agotron=="." & dat$Has_snoRNA==".",
+                          i]/mapped_reads[i-81])),col="black")
+  if (i<92){
+    lines(density(log10(dat[dat[,i]>0 & dat$Has_snoRNA!=".",i]/mapped_reads[i-81])),col="goldenrod")
+  }
+  lines(density(log10(snoRNA[snoRNA[,i-80]>0,i-80]/mapped_reads[i-81])),col="goldenrod",lty=4)
+  if (i==88){
+    legend(0,1.5,bty="n",legend = c("Other FLEXIs", "Agotron","Mirtron","snoRNA FLEXIs","snoRNAs"),
+           col=c("black","firebrick2","deepskyblue2","goldenrod","goldenrod"),
+           lty=c(1,1,1,1,4),lwd=1.5)
+  }
+  if (D_height[i-87]==2){
+    axis(2,labels=seq(0,2,1),las=1,at=seq(0,2,1),las=2)
+  } else {
+    axis(2,labels=seq(0,1.5,0.5),las=1,at=seq(0,1.5,0.5),las=2)
+  }
+  
+  axis(1,labels=c(parse(text='10^-4'),bquote(10^-3),bquote(10^-2),bquote(10^-1),1,10,bquote(10^2),bquote(10^3),
+                  bquote(10^4)),
+       at=seq(-4,4,1))
+}
+dev.off()
 
 
 
+# new fig4B/C/D
 
+# cell: 4cell lines+plasma FLEXI
+# all FLEXI: all short introns
+# all intron: all short and long introns
+# GRCh38: all positions
+RBP_fre<-RBP[,c(46:49)]
+# now all intron means all long introns
+RBP_fre$All_Intron<-RBP_fre$All_Intron-RBP_fre$All_FLEXI
+# now all FLEXI are all other short introns (not in 4cell + plasma)
+RBP_fre$All_FLEXI<-RBP$All_FLEXI-RBP$Cells
+R_sum<-colSums(RBP_fre)
+#exact fisher test pvalue
+# SvF short intron vs FLEXI, 2 vs 1
+# LvF long intron vs FLEXI, 3 vs 1
+# AvF all RBP sites  vs FLEXI, 4 vs 1
+# AvL all RBP sites  vs long intron, 4 vs 3
+RBP_fre$SvFpvlue<-1
+RBP_fre$LvFpvlue<-1
+RBP_fre$AvFpvlue<-1
+RBP_fre$AvLpvlue<-1
+for (i in 1:152){
+  RBP_fre[i,5]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(1,2)],R_sum[c(1,2)]),2,2))$p.value
+  RBP_fre[i,6]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(1,3)],R_sum[c(1,3)]),2,2))$p.value
+  RBP_fre[i,7]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(1,4)],R_sum[c(1,4)]),2,2))$p.value
+  RBP_fre[i,8]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(3,4)],R_sum[c(3,4)]),2,2))$p.value
+}
+RBP_fre[,1:4]<-data.frame(prop.table(as.matrix(RBP_fre[,1:4]),margin = 2)*100)
+RBP_fre$Name<-RBP$RBP.name
+RBP_fre$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre[RBP_fre$col>1,10]<-4
+RBP_fre[RBP_fre$col==1,10]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,10]<-2
+RBP_fre[RBP_fre$col==0,10]<-1
+Splicesome<-c("SF3B4","PRPF8","EFTUD2","BUD13","AQR","PPIG")
+col<-c("black","red","orange","skyblue")
+
+pdf("temp_fig//Fig4BCD.pdf",height=6,width=12)
+par(mfcol=c(2,4))
+par(pch=16,pty="s")
+plot(RBP_fre[,c(2,1)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",col=col[RBP_fre$col],
+     ylab="FLEXIs (% RBP sites)",xlab="Other short introns (% RBP sites)")
+#text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,2]>=4 | RBP_fre[,1]>=4)),c(2,1)],
+#     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,1]>=4 | RBP_fre[,2]>=4)])
+abline(0,1,col="red")
+text(RBP_fre[RBP_fre$Name%in%Splicesome,c(2,1)],col="red",pos = 2,cex=0.5,
+     labels = RBP_fre$Name[RBP_fre$Name%in%Splicesome])
+     
+plot(RBP_fre[,c(2,1)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_fre$col],
+     ylab="FLEXIs (% RBP sites)",xlab="Other short introns (% RBP sites)")
+text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,2]>=1 | RBP_fre[,1]>=1) ),c(2,1)],cex=0.5,
+     col=col[RBP_fre$col[RBP_fre$SvFpvlue<=0.05& (RBP_fre[,1]>=1 | RBP_fre[,2]>=1) ]],
+     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05& (RBP_fre[,1]>=1 | RBP_fre[,2]>=1) ])
+abline(0,1,col="red")
+
+plot(RBP_fre[,c(3,1)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",col=col[RBP_fre$col],
+     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
+#text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,3]>=4 | RBP_fre[,1]>=4)),c(3,1)],
+#     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,1]>=4 | RBP_fre[,3]>=4)])
+abline(0,1,col="red")
+text(RBP_fre[RBP_fre$Name%in%Splicesome,c(3,1)],col="red",pos = 4,cex=0.5,
+     labels = RBP_fre$Name[RBP_fre$Name%in%Splicesome])
+
+plot(RBP_fre[,c(3,1)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_fre$col],
+     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
+text(RBP_fre[(RBP_fre$LvFpvlue<=0.05 & (RBP_fre[,3]>=1 | RBP_fre[,1]>=1) ),c(3,1)],cex=0.5,
+     col=col[RBP_fre$col[RBP_fre$LvFpvlue<=0.05& (RBP_fre[,1]>=1 | RBP_fre[,3]>=1) ]],
+     labels = RBP_fre$Name[RBP_fre$LvFpvlue<=0.05& (RBP_fre[,1]>=1 | RBP_fre[,3]>=1) ])
+abline(0,1,col="red")
+
+plot(RBP_fre[,c(4,1)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",col=col[RBP_fre$col],
+     xlab="All RBP binding sites (%)",ylab="FLEXIs (% RBP sites)")
+abline(0,1,col="red")
+#text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,4]>=4 | RBP_fre[,1]>=4)),c(4,1)],
+#     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,1]>=4 | RBP_fre[,4]>=4)])
+text(RBP_fre[RBP_fre$Name%in%Splicesome,c(4,1)],col="red",pos = 4,cex=0.5,
+     labels = RBP_fre$Name[RBP_fre$Name%in%Splicesome])
+
+
+plot(RBP_fre[,c(4,1)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_fre$col],
+     xlab="All RBP binding sites (%)",ylab="FLEXIs (% RBP sites)")
+abline(0,1,col="red")
+text(RBP_fre[(RBP_fre$AvFpvlue<=0.05 & (RBP_fre[,4]>=1 | RBP_fre[,1]>=1)),c(4,1)],cex=0.5,
+     col=col[RBP_fre$col[RBP_fre$AvFpvlue<=0.05 & (RBP_fre[,1]>=1 | RBP_fre[,4]>=1)]],
+     labels = RBP_fre$Name[RBP_fre$AvFpvlue<=0.05 & (RBP_fre[,1]>=1 | RBP_fre[,4]>=1)])
+
+plot(RBP_fre[,c(4,3)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",col=col[RBP_fre$col],
+     xlab="All RBP binding sites (%)",ylab="Long introns (% RBP sites)")
+abline(0,1,col="red")
+#text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,4]>=4 | RBP_fre[,3]>=4)),c(4,3)],
+#     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,3]>=4 | RBP_fre[,4]>=4)])
+text(RBP_fre[RBP_fre$Name%in%Splicesome,c(4,3)],col="red",pos = 4,cex=0.5,
+     labels = RBP_fre$Name[RBP_fre$Name%in%Splicesome])
+
+plot(RBP_fre[,c(4,3)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_fre$col],
+     xlab="All RBP binding sites (%)",ylab="Long introns (% RBP sites)")
+abline(0,1,col="red")
+text(RBP_fre[(RBP_fre$AvLpvlue<=0.05 & (RBP_fre[,4]>=1 | RBP_fre[,3]>=1)),c(4,3)],cex=0.5,
+     col=col[RBP_fre$col[RBP_fre$AvLpvlue<=0.05 & (RBP_fre[,3]>=1 | RBP_fre[,4]>=1)]],
+     labels = RBP_fre$Name[RBP_fre$AvLpvlue<=0.05 & (RBP_fre[,3]>=1 | RBP_fre[,4]>=1)])
+dev.off()
+#rm(RBP_fre)
+
+# new fig4B/C/D_ver2
+
+# cell: 4cell lines+plasma FLEXI
+# all FLEXI: all short introns
+# all intron: all short and long introns
+# GRCh38: all positions
+RBP_fre<-RBP[,c(46:49)]
+# now all intron means all long introns
+RBP_fre$All_Intron<-RBP_fre$All_Intron-RBP_fre$All_FLEXI
+# now all FLEXI are all other short introns (not in 4cell + plasma)
+RBP_fre$All_FLEXI<-RBP$All_FLEXI-RBP$Cells
+R_sum<-colSums(RBP_fre)
+#exact fisher test pvalue
+# LvF long intron vs FLEXI, 3 vs 1
+# LvS long intron vs other short introns, 3 vs 2
+RBP_fre$LvFpvlue<-1
+RBP_fre$LvSpvlue<-1
+for (i in 1:152){
+  RBP_fre[i,5]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(3,1)],R_sum[c(3,1)]),2,2))$p.value
+  RBP_fre[i,6]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,3)],R_sum[c(2,3)]),2,2))$p.value
+}
+RBP_fre[,1:4]<-data.frame(prop.table(as.matrix(RBP_fre[,1:4]),margin = 2)*100)
+RBP_fre$Name<-RBP$RBP.name
+RBP_fre$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre[RBP_fre$col>1,8]<-4
+RBP_fre[RBP_fre$col==1,8]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,8]<-2
+RBP_fre[RBP_fre$col==0,8]<-1
+Splicesome<-c("SF3B4","PRPF8","EFTUD2","BUD13","AQR","PPIG")
+col<-c("black","red","orange","skyblue")
+
+pdf("temp_fig/Fig4BV2.pdf",height=3,width=12)
+par(mfrow=c(1,4))
+par(pch=16,pty="s")
+plot(RBP_fre[,c(3,1)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",col=col[RBP_fre$col],
+     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
+#text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,3]>=4 | RBP_fre[,1]>=4)),c(3,1)],
+#     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,1]>=4 | RBP_fre[,3]>=4)])
+abline(0,1,col="red")
+text(RBP_fre[RBP_fre$Name%in%Splicesome,c(3,1)],col="red",pos = 4,cex=0.5,
+     labels = RBP_fre$Name[RBP_fre$Name%in%Splicesome])
+
+plot(RBP_fre[,c(3,1)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_fre$col],
+     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
+text(RBP_fre[(RBP_fre$LvFpvlue<=0.05 & (RBP_fre[,3]>=1 | RBP_fre[,1]>=1) ),c(3,1)],cex=0.5,
+     col=col[RBP_fre$col[RBP_fre$LvFpvlue<=0.05& (RBP_fre[,1]>=1 | RBP_fre[,3]>=1) ]],
+     labels = RBP_fre$Name[RBP_fre$LvFpvlue<=0.05& (RBP_fre[,1]>=1 | RBP_fre[,3]>=1) ])
+abline(0,1,col="red")
+
+plot(RBP_fre[,c(3,2)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",col=col[RBP_fre$col],
+     xlab="Other short introns (% RBP sites)",ylab="Long introns (% RBP sites)")
+abline(0,1,col="red")
+#text(RBP_fre[(RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,4]>=4 | RBP_fre[,1]>=4)),c(4,1)],
+#     labels = RBP_fre$Name[RBP_fre$SvFpvlue<=0.05 & (RBP_fre[,1]>=4 | RBP_fre[,4]>=4)])
+text(RBP_fre[RBP_fre$Name%in%Splicesome,c(3,2)],col="red",pos = 4,cex=0.5,
+     labels = RBP_fre$Name[RBP_fre$Name%in%Splicesome])
+
+
+plot(RBP_fre[,c(3,2)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_fre$col],
+     xlab="Other short introns (% RBP sites)",ylab="Long introns (% RBP sites)")
+abline(0,1,col="red")
+text(RBP_fre[(RBP_fre$LvSpvlue<=0.05 & (RBP_fre[,3]>=1 | RBP_fre[,2]>=1)),c(3,2)],cex=0.5,
+     col=col[RBP_fre$col[RBP_fre$LvSpvlue<=0.05 & (RBP_fre[,2]>=1 | RBP_fre[,3]>=1)]],
+     labels = RBP_fre$Name[RBP_fre$LvSpvlue<=0.05 & (RBP_fre[,2]>=1 | RBP_fre[,3]>=1)])
+dev.off()
+#rm(RBP_fre)
+
+
+#FigS10
+dat<-read.delim("all.FLEXI")
+FLEXI_ID<-dat$ID[rowSums(dat[,88:92])>0]
+RBP_list<-c("BCLAF1","DX3X","RPS3","ZNF800","XRN2","DKC1","BCLAF")
+#pdf("Figures/FigS9.pdf",width=8,height=5)
+Splicesome<-c("SF3B4","PRPF8","EFTUD2","BUD13","AQR")
+set_1 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[1]])
+set_2 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[2]])
+set_3 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[3]])
+set_4 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[4]])
+set_5 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[5]])
+set_6 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[6]])
+set_7 <- unique(RBP_info_4cell$ID[RBP_info_4cell$RBP%in%RBP_list[7]])
+set <- list (set_1,set_2,set_3,set_4,set_5,set_6,set_7)
+names(set)<-RBP_list
+upset(fromList(set),keep.order=T,set_size.show = T,
+      mainbar.y.label = "FLEXI RNAs",sets.x.label = "FLEXI RNAs",
+      sets=names(set),nintersects = 1000,nsets = 4)
+dev.off()
+
+#RBP-specific FLEXI (one by one) to all FLEXI
+RBP_fre<-RBP[,c(1,46)]
+RBP_fre$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre<-RBP_fre[RBP_fre$Cells>0,]
+RBP_fre[RBP_fre$col>1,3]<-4
+RBP_fre[RBP_fre$col==1,3]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,3]<-2
+RBP_fre[RBP_fre$col==0,3]<-1
+RBP_fre<-RBP_fre[,c(1,3,2)]
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_list<-sort(unique(RBP_4cell_plasma$RBP))
+
+pdf("temp_fig/RBP_boundFLEXI_RBP.pdf",width=12,height=18)
+col<-c("black","red","orange","skyblue")
+par(mfrow=c(6,4))
+par(pch=16,pty="s")
+for (i in 1:126) {
+  RBP_name<-RBP_list[i]
+  FLEXI_list<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP==RBP_name])
+  FLEXI_RBP<-data.frame(table(RBP_4cell_plasma$RBP[RBP_4cell_plasma$ID%in%FLEXI_list]))
+  RBP_plot<-merge(RBP_fre,FLEXI_RBP,by=1,all=T)
+  RBP_plot[is.na(RBP_plot)]<-0
+  RBP_plot$Padj<-1
+  RBP_plot$Padj_withSign<-1
+  RBP_plot$Type<-"N"
+  R_sum<-colSums(RBP_plot[,3:4])
+  for (j in 1:126){
+    RBP_plot[j,5]<-fisher.test(as.matrix(rbind(RBP_plot[j,3:4],R_sum,2,2)))$p.value
+  }
+  RBP_plot[,3:4]<-data.frame(prop.table(as.matrix(RBP_plot[,3:4]),margin = 2)*100)
+  RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="fdr")
+  RBP_plot[RBP_plot$Padj<=0.01 & RBP_plot$Cells>RBP_plot$Freq & RBP_plot$Cells>=1,7]<-"D"
+  RBP_plot[RBP_plot$Padj<=0.01 & RBP_plot$Cells<RBP_plot$Freq & RBP_plot$Freq>=1,7]<-"U"
+  RBP_plot[RBP_plot$Cells<=RBP_plot$Freq,6]<- -log10(RBP_plot[RBP_plot$Cells<=RBP_plot$Freq,5])
+  RBP_plot[RBP_plot$Cells>RBP_plot$Freq,6]<- log10(RBP_plot[RBP_plot$Cells>RBP_plot$Freq,5])
+  if (i==1){
+    RBP_clus<-RBP_plot[,c(1,2,7)]
+    colnames(RBP_clus)[3]<-paste0(RBP_name,"BF")
+    RBP_clus_log10<-RBP_plot[,c(1,2,6)]
+    colnames(RBP_clus_log10)[3]<-paste0(RBP_name,"BF")
+    
+  } else {
+    RBP_clus<-merge(RBP_clus,RBP_plot[,c(1,2,7)],by=1:2)
+    colnames(RBP_clus)[dim(RBP_clus)[2]]<-paste0(RBP_name,"BF")
+    RBP_clus_log10<-merge(RBP_clus_log10,RBP_plot[,c(1,2,6)],by=1:2)
+    colnames(RBP_clus_log10)[dim(RBP_clus_log10)[2]]<-paste0(RBP_name,"BF")
+  }
+  #RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="bonferroni")
+  axis_max<-floor(max(RBP_plot[,3:4])/5)*5+5
+  plot(RBP_plot[,c(3,4)],xlim=c(0,axis_max),ylim=c(0,axis_max),cex=1.5,bty="n",col=col[RBP_plot$col],
+       ylab=paste0(RBP_name," bound FLEXIs (% RBP sites)"),xlab="ALl FLEXIs (% RBP sites)")
+  #sig_cutoff<-(RBP_plot$Padj<=0.05 & (RBP_plot[,3]>=3 | RBP_plot[,4]>=3))
+  sig_cutoff<-(RBP_plot$Padj<=0.01 & (RBP_plot[,3]>=3 | RBP_plot[,4]>=3))
+  text(RBP_plot[sig_cutoff,3:4],cex=0.5,pos = 4,
+       col=col[RBP_plot$col[sig_cutoff]],
+       labels = RBP_plot$RBP.name[sig_cutoff])
+  abline(0,1,col="red")
+  legend(axis_max/2,axis_max,cex=0.5,
+         text.col=col[RBP_plot$col[sig_cutoff& (RBP_plot$Cells<RBP_plot[,4])]],
+         legend = RBP_plot$RBP.name[sig_cutoff & (RBP_plot$Cells<RBP_plot[,4])])
+  legend(axis_max-5,axis_max-5,cex=0.5,
+         text.col=col[RBP_plot$col[sig_cutoff& (RBP_plot$Cells>RBP_plot[,4])]],
+         legend = RBP_plot$RBP.name[sig_cutoff & (RBP_plot$Cells>RBP_plot[,4])])
+}
+dev.off()
+
+rownames(RBP_clus)<-RBP_clus$RBP.name
+RBP_clus<-RBP_clus[,c(3:128)]
+RBP_clus<-data.frame(t(RBP_clus))
+for (i in 1:126){
+  RBP_clus[,i]<-factor(RBP_clus[,i],levels = c("D","N","U"))
+}
+RBP_col<-RBP_fre[,c(1,2)]
+rownames(RBP_col)<-RBP_col$RBP.name
+
+rownames(RBP_clus_log10)<-RBP_clus_log10$RBP.name
+RBP_clus_col<-RBP_clus_log10[,1:2]
+RBP_clus_col$BP.name<-paste0(RBP_clus_col$RBP.name,"BF")
+RBP_clus_log10<-RBP_clus_log10[,3:128]
+RBP_clus_log10.t<-data.frame(t(RBP_clus_log10))
+
+gower.dist <- daisy(RBP_clus, metric = c("gower"))
+aggl.clust.r <- hclust(gower.dist, method = "complete")
+
+#gower.dist.r <- daisy(RBP_clus_log10.t, metric = c("euclidean"))
+gower.dist.c <- daisy(RBP_clus_log10, metric = c("euclidean"))
+#aggl.clust.r <- hclust(gower.dist.r, method = "complete")
+aggl.clust.c <- hclust(gower.dist.c, method = "complete")
+RBP_clus_log10_convertedvalue<-RBP_clus_log10.t
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue>=5]<-5
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue<=-5]<- -5
+for (i in 1:126){
+  colname<-paste0(colnames(RBP_clus_log10_convertedvalue)[i],"BF")
+  RBP_clus_log10_convertedvalue[colname,i]<-NA
+}
+
+pdf("temp_fig/heatmap_RBP.pdf",height=10,width=10)
+labels.c<-colnames(RBP_clus_log10_convertedvalue)
+col.c<-RBP_clus_col$col[RBP_clus_col$RBP.name%in%labels.c]
+labels.r<-labels(aggl.clust.r)
+labels.r<-substr(labels.r,1,nchar(labels.r)-2)
+col.r<-RBP_clus_col$col[RBP_clus_col$RBP.name%in%labels.r]
+Heatmap(RBP_clus_log10_convertedvalue, 
+        row_names_gp = gpar(fontsize = 7,col=col[col.r]),
+        na_col="black",
+        col = colorRamp2(seq(-5,5,length = 3),c("blue", "#EEEEEE", "red")),
+        column_names_gp = gpar(fontsize = 7,col=col[col.c]),
+        cluster_rows =aggl.clust.r )
+dev.off()
+
+#53 RBP
+RBP_53<-paste0(Fun$Name[Fun$RBP_by_FLEXI>=30],"BF")
+RBP_clus_log10.53<-RBP_clus_log10[,colnames(RBP_clus_log10)%in%RBP_53]
+RBP_clus_log10.53.t<-data.frame(t(RBP_clus_log10.53))
+RBP_clus.53<-RBP_clus[rownames(RBP_clus)%in%RBP_53,]
+gower.dist <- daisy(RBP_clus.53, metric = c("gower"))
+aggl.clust.r <- hclust(gower.dist, method = "complete")
+
+#gower.dist.r <- daisy(RBP_clus_log10.53.t, metric = c("euclidean"))
+gower.dist.c <- daisy(RBP_clus_log10.53, metric = c("euclidean"))
+#aggl.clust.r <- hclust(gower.dist.r, method = "complete")
+aggl.clust.c <- hclust(gower.dist.c, method = "complete")
+RBP_clus_log10_convertedvalue<-RBP_clus_log10.53.t
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue>=5]<-5
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue<=-5]<- -5
+for (i in 1:53){
+  colname<-rownames(RBP_clus_log10_convertedvalue)[i]
+  colname<-substr(colname,1,nchar(colname)-2)
+  RBP_clus_log10_convertedvalue[i,colnames(RBP_clus_log10_convertedvalue)==colname]<-NA
+}
+
+pdf("temp_fig/53RBP_heatmap_cluster.pdf",height=6,width=12)
+labels.c<-colnames(RBP_clus_log10_convertedvalue)
+col.c<-RBP_clus_col$col[RBP_clus_col$RBP.name%in%labels.c]
+labels.r<-labels(aggl.clust.r)
+labels.r<-substr(labels.r,1,nchar(labels.r)-2)
+col.r<-RBP_clus_col$col[RBP_clus_col$RBP.name%in%labels.r]
+Heatmap(RBP_clus_log10_convertedvalue, na_col="black",
+        row_names_gp = gpar(fontsize = 7,col=col[col.r]),
+        col = colorRamp2(seq(-5,5,length = 3),c("blue", "#EEEEEE", "red")),
+        column_names_gp = gpar(fontsize = 7,col=col[col.c]),
+        cluster_rows = color_branches(aggl.clust.r, k =7),
+        #cluster_columns = aggl.clust.c
+        )
+dev.off()
+
+#53 RBP -no core splice RBP
+# make RBP_clus and RBP_clus_log10 data frame
+# table is made in RBP_clus_byCEllType.R
+
+RBP_fre<-RBP[,c(1,46)]
+RBP_fre$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre<-RBP_fre[RBP_fre$Cells>0,]
+RBP_fre[RBP_fre$col>1,3]<-4
+RBP_fre[RBP_fre$col==1,3]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,3]<-2
+RBP_fre[RBP_fre$col==0,3]<-1
+RBP_fre<-RBP_fre[,c(1,3,2)]
+
+dat<-read.delim("4cell_plasma_FLEXI.tsv")
+cutoff<-0
+FLEXI<-dat[rowMaxs(as.matrix(dat[,88:91]))>cutoff,]
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+RBP_list<-sort(unique(RBP_4cell_plasma$RBP))
+
+RBP_clus<-read.delim("RBP_clus_froGower.txt")
+marker_text<-RBP_clus
+marker_text[marker_text=="U"]<-"X"
+marker_text[marker_text=="N"]<-""
+marker_text[marker_text=="D"]<-"X"
+RBP_clus<-data.frame(t(RBP_clus))
+for (i in 1:dim(RBP_clus)[2]){
+  RBP_clus[,i]<-factor(RBP_clus[,i],levels = c("D","N","U"))
+}
+
+RBP_clus_log10<-read.delim("RBP_clus_froHeatmap.txt")
+
+gower.dist <- daisy(RBP_clus, metric = c("gower"))
+aggl.clust.r <- hclust(gower.dist, method = "complete")
+RBP_clus_log10_convertedvalue<-RBP_clus_log10
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue>=5]<-5
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue<=-5]<- -5
+for (j in 1:dim(RBP_clus_log10_convertedvalue)[2]){
+  colname<-rownames(RBP_clus_log10_convertedvalue)[j]
+  colname<-paste0(colname,"BF")
+  RBP_clus_log10_convertedvalue[j,colname]<-NA
+}
+RBP_col<-RBP[,c(1,46)]
+RBP_col$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_col[RBP_col$col>1,3]<-4
+RBP_col[RBP_col$col==1,3]<-3
+RBP_col[RBP_col$col<1 & RBP_col$col>0,3]<-2
+RBP_col[RBP_col$col==0,3]<-1
+RBP_col<-RBP_col[,c(1,3)]
+rownames(RBP_col)<-RBP_col$RBP.name
+
+col<-c("black","red","orange","skyblue")
+pdf("temp_fig/126RBP_heatmap_cluster3cutoff.pdf",height=8,width=8)
+labels.r<-substr(labels(aggl.clust.r),1,nchar(labels(aggl.clust.r))-2)
+col.r<-RBP_col$col[match(labels.r,RBP_col$RBP.name)]
+RBP_clus_log10_convertedvalue<-RBP_clus_log10_convertedvalue[labels.r,]
+Heatmap(RBP_clus_log10_convertedvalue, na_col="black",
+        row_names_gp = gpar(fontsize = 4,col=col[col.r]),
+        col = colorRamp2(seq(-5,5,length = 3),c("blue", "#EEEEEE", "red")),
+        show_column_names = F,
+        cluster_rows = F, cluster_columns =aggl.clust.r)
+dev.off()
+
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+RBP_47<-data.frame(table(RBP_4cell_plasma$RBP))
+RBP_47<-RBP_47[order(RBP_47$Freq,decreasing = T),]
+RBP_47_name<-as.character(RBP_47$Var1[RBP_47$Freq>=30])
+RBP_47_name<-RBP_47_name[7:length(RBP_47_name)]
+RBP_47<-paste0(RBP_47_name,"BF")
+
+RBP_clus_log10.47<-RBP_clus_log10[,colnames(RBP_clus_log10)%in%RBP_47]
+RBP_clus_log10.47<-RBP_clus_log10.47[rownames(RBP_clus_log10.47)%in%RBP_47_name,]
+marker_text.47<-marker_text[,colnames(marker_text)%in%RBP_47]
+marker_text.47<-marker_text.47[rownames(marker_text.47)%in%RBP_47_name,]
+RBP_clus.47<-RBP_clus[rownames(RBP_clus)%in%RBP_47,]
+RBP_clus.47<-RBP_clus.47[,colnames(RBP_clus.47)%in%RBP_47_name]
+
+gower.dist <- daisy(RBP_clus.47, metric = c("gower"))
+aggl.clust.r <- hclust(gower.dist, method = "complete")
+RBP_clus_log10_convertedvalue<-RBP_clus_log10.47
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue>=5]<-5
+RBP_clus_log10_convertedvalue[RBP_clus_log10_convertedvalue<=-5]<- -5
+for (j in 1:dim(RBP_clus_log10_convertedvalue)[2]){
+  colname<-rownames(RBP_clus_log10_convertedvalue)[j]
+  colname<-paste0(colname,"BF")
+  RBP_clus_log10_convertedvalue[j,colname]<-NA
+}
+
+pdf("temp_fig/47RBP_heatmap_cluster3cutoff.pdf",height=6,width=6)
+labels.r<-substr(labels(aggl.clust.r),1,nchar(labels(aggl.clust.r))-2)
+col.r<-RBP_col$col[match(labels.r,RBP_col$RBP.name)]
+RBP_clus_log10_convertedvalue<-RBP_clus_log10_convertedvalue[labels.r,]
+marker_text.47<-marker_text.47[labels.r,]
+Heatmap(RBP_clus_log10_convertedvalue, na_col="black",
+        show_column_names = F,
+        row_names_gp = gpar(fontsize = 7,col=col[col.r]),
+        col = colorRamp2(seq(-5,5,length = 3),c("blue", "#EEEEEE", "red")),
+        cluster_rows = F, cluster_columns =aggl.clust.r,
+        cell_fun = function(i, j, x, y,w, h, col) {
+          grid.text(marker_text.47[j, i], x, y,gp = gpar(fontsize = 7))})
+dev.off()
+
+labels.r<-labels(aggl.clust.r)
+labels.r<-substr(labels.r,1,nchar(labels.r)-2)
+RBP_47_info<-RBP[match(labels.r,RBP$RBP.name),1:43]
+
+RBP_47_info$StressGranule<-0
+SG<-read.table("SG_MSGP_RGD.list",col.names="ID")
+RBP_47_info[RBP_47_info$RBP.name%in%SG$ID,44]<-1
+RBP_47_info<-RBP_47_info[,c(1:31,44,32:43)]
+RBP_47_info[is.na(RBP_47_info)]<-0
+RBP_47_info<-RBP_47_info[,c(TRUE,TRUE,colSums(RBP_47_info[,3:44])>0)]
+#AGO is in P body, stress granule, nuclei and cytoplasm
+RBP_47_info[RBP_47_info$RBP.name=="AGO",c(19,23,26,27)]<-1
+#DICER is in P body, ER, nuclei and cytoplasm
+RBP_47_info[RBP_47_info$RBP.name=="DICER",c(19,23,26,28)]<-1
+RBP_47_info$mRNA<-0 
+RBP_47_info$AltSPl<-0
+RBP_47_info$LowGC<-0
+RBP_47_info$phastCons<-0
+name_list<-c("DDX55", "GPKOW", "LARP4", "NCBP2", "PCBP2", "RBM15", "RBM22", "RPS3", 
+             "SF3A3", "SRSF1", "TIAL1", "U2AF2", "UCHL5", "ZNF622")
+RBP_47_info$mRNA[RBP_47_info$RBP.name%in%name_list]<-1
+name_list<-c("SUB1", "IGF2BP1", "PCBP2","RBM22")
+RBP_47_info$AltSPl[RBP_47_info$RBP.name%in%name_list]<-1
+name_list<-c("BCLAF1","TRA2A","ZNF800","TIA1","TIAL1","KHSRP","U2AF2","U2AF1","GPKOW",
+             "NOLC1","AATF","DKC1")
+RBP_47_info$LowGC[RBP_47_info$RBP.name%in%name_list]<-1
+name_list<-c("UCHL5","ZNF622","BCLAF1","ZNF800","TIA1","KHSRP","U2AF2","U2AF1",
+             "SRSF1","GRWD1","IGF2BP1","PCBP1","PCBP2","LIN28B","SMNDC1")
+RBP_47_info$phastCons[RBP_47_info$RBP.name%in%name_list]<-1
+
+pdf("temp_fig/Fig5B.pdf",width=12,height=8)
+par(mfrow=c(4,1),mar = c(5,2,2,20))
+image(1:47,1:16,as.matrix(RBP_47_info[,18:3]),col=c("white","blue"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:16,labels = colnames(RBP_47_info)[18:3],tick = FALSE)
+image(1:47,1:14,as.matrix(RBP_47_info[,32:19]),col=c("white","red"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:14,labels = colnames(RBP_47_info)[32:19],tick = FALSE)
+image(1:47,1:6,as.matrix(RBP_47_info[38:33]),col=c("white","green"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:6,labels = colnames(RBP_47_info)[38:33],tick = FALSE)
+image(1:47,1:4,as.matrix(RBP_47_info[42:39]),col=c("white","purple"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:4,labels = colnames(RBP_47_info)[42:39],tick = FALSE)
+axis(1,las=2,at = 1:47,labels = RBP_47_info$RBP.name,tick = FALSE,cex=0.5)
+dev.off()
+
+### need modify
+RBP_clus_image<-read.delim("RBP_clus_image.txt",row.names = 1)
+RBP_clus_image<-RBP_clus_image+1
+RBP_clus_image<-t(RBP_clus_image)
+icol<-c("white",brewer.pal(12,"Paired"))
+pdf("temp_fig/RBP_clus_image.pdf",width=8,height=3)
+image(1:40,1:6,as.matrix(RBP_clus_image[,6:1]),col=icol,bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:6,labels = colnames(RBP_clus_image)[6:1],tick = FALSE,cex=0.5)
+axis(1,las=2,at = 1:40,labels = rownames(RBP_clus_image),tick = FALSE,cex=0.5)
+dev.off()
+
+
+#53 RBP-by group
+group_list<-list(group1=labels.r[c(1:8)])
+group_list$group2<-labels.r[c(9:12)]
+group_list$group3<-labels.r[c(12:15)]
+group_list$group4<-labels.r[c(16:17)]
+group_list$group5<-labels.r[c(19:21)]
+group_list$group6<-labels.r[c(22:23)]
+group_list$group7<-labels.r[c(24:25)]
+group_list$group8<-labels.r[c(26:27)]
+group_list$group9<-labels.r[c(28:30)]
+group_list$group10<-labels.r[c(32:33)]
+group_list$group11<-labels.r[c(44:47)]
+
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+RBP_fre<-data.frame(table(RBP_4cell_plasma$RBP))
+colnames(RBP_fre)<-c("RBP.name","Cells")
+RBP$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre<-merge(RBP_fre,RBP[,c(1,50)],by=1)
+RBP_fre[RBP_fre$col>1,3]<-4
+RBP_fre[RBP_fre$col==1,3]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,3]<-2
+RBP_fre[RBP_fre$col==0,3]<-1
+RBP_fre<-RBP_fre[,c(1,3,2)]
+
+percent_cutoff<-2
+pvalue_cutoff<-0.01
+
+pdf("temp_fig/RBP_boundFLEXI_RBP_by_group.pdf",width=12,height=9)
+col<-c("black","red","orange","skyblue")
+par(mfrow=c(4,3),mar=c(3,3,1,1))
+par(pch=16,pty="s")
+for (i in 1:11) {
+  RBP_name<-group_list[[i]]
+  FLEXI_list<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%RBP_name])
+  FLEXI_RBP<-data.frame(table(RBP_4cell_plasma$RBP[RBP_4cell_plasma$ID%in%FLEXI_list]))
+  RBP_plot<-merge(RBP_fre,FLEXI_RBP,by=1,all=T)
+  RBP_plot[is.na(RBP_plot)]<-0
+  RBP_plot$Padj<-1
+  RBP_plot$Type<-"N"
+  R_sum<-colSums(RBP_plot[,3:4])
+  for (j in 1:dim(RBP_plot)[1]){
+    RBP_plot[j,5]<-fisher.test(as.matrix(rbind(RBP_plot[j,3:4],R_sum)))$p.value
+  }
+  RBP_plot[,3:4]<-data.frame(prop.table(as.matrix(RBP_plot[,3:4]),margin = 2)*100)
+  RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="fdr")
+  RBP_plot[RBP_plot$Padj<=pvalue_cutoff & RBP_plot$Cells>RBP_plot$Freq & RBP_plot$Cells>=percent_cutoff,6]<-"D"
+  RBP_plot[RBP_plot$Padj<=pvalue_cutoff & RBP_plot$Cells<RBP_plot$Freq & RBP_plot$Freq>=percent_cutoff,6]<-"U"
+  #RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="bonferroni")
+  axis_max<-floor(max(RBP_plot[,3:4])/5)*5+5
+  plot(RBP_plot[,c(3,4)],xlim=c(0,axis_max),ylim=c(0,axis_max),cex=1.5,
+       bty="n",col=col[RBP_plot$col],
+       ylab=paste0("Group ",i,"RBP bound FLEXIs (% RBP sites)"),xlab="ALl FLEXIs (% RBP sites)")
+  #sig_cutoff<-(RBP_plot$Padj<=0.05 & (RBP_plot[,3]>=3 | RBP_plot[,4]>=3))
+  sig_cutoff<-(RBP_plot$Padj<=pvalue_cutoff & (RBP_plot[,3]>=percent_cutoff | RBP_plot[,4]>=percent_cutoff))
+  abline(0,1,col="red")
+  if(sum(sig_cutoff)>0){
+    text(RBP_plot[sig_cutoff,3:4],cex=0.5,pos = 4,
+       col=col[RBP_plot$col[sig_cutoff]],
+       labels = RBP_plot$RBP.name[sig_cutoff])
+  }
+}
+dev.off()
+#Fig1G
+pdf("temp_fig/Fig1G.pdf",height=8,width=8)
+
+group_CPM<-dat_CPM[,c(1,33:36)]
+group_FLEXI<-list(goup1=unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[1]]]))
+group_FLEXI$group2<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[2]]])
+group_FLEXI$group3<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[3]]])
+group_FLEXI$group4<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[4]]])
+group_FLEXI$group5<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[5]]])
+group_FLEXI$group6<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[6]]])
+group_FLEXI$group7<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[7]]])
+group_FLEXI$group8<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[8]]])
+group_FLEXI$group9<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[9]]])
+group_FLEXI$group10<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[10]]])
+group_FLEXI$group11<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%group_list[[11]]])
+par(mfrow=c(3,2))
+for (i in 1:11){
+  plot(density(log10(rowMeans(group_CPM[group_CPM$ID%in%group_FLEXI[[i]],2:5]))),col="red",
+       bty="n",xlim=c(-4,1),ylim=c(0,2),xlab="RPM",main=paste0("Complex ",i))
+  lines(density(log10(rowMeans(group_CPM[!group_CPM$ID%in%group_FLEXI[[i]],2:5]))))
+}
+dev.off()
+
+#individual 47 RBP scatter
+dat<-read.delim("4cell_plasma_FLEXI.tsv")
+#this can be chanhged
+cutoff<-0
+percent_cutoff<-2
+pvalue_cutoff<-0.01
+col<-c("black","red","orange","skyblue")
+#simple cutoff
+FLEXI<-dat[rowMaxs(as.matrix(dat[,88:91]))>cutoff,]
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+
+RBP_fre<-data.frame(table(RBP_4cell_plasma$RBP))
+colnames(RBP_fre)<-c("RBP.name","Cells")
+RBP$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre<-merge(RBP_fre,RBP[,c(1,50)],by=1)
+RBP_fre[RBP_fre$col>1,3]<-4
+RBP_fre[RBP_fre$col==1,3]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,3]<-2
+RBP_fre[RBP_fre$col==0,3]<-1
+RBP_fre<-RBP_fre[,c(1,3,2)]
+
+
+pdf("temp_fig/47RBP_boundFLEXI_RBP.pdf",width=9,height=15)
+col<-c("black","red","orange","skyblue")
+par(mfrow=c(5,3))
+par(pch=16,pty="s")
+for (i in 1:length(labels.r)) {
+    Name<-labels.r[i]
+    FLEXI_list<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP==Name])
+    FLEXI_RBP<-data.frame(table(RBP_4cell_plasma$RBP[RBP_4cell_plasma$ID%in%FLEXI_list]))
+    RBP_plot<-merge(RBP_fre,FLEXI_RBP,by=1,all=T)
+    RBP_plot[is.na(RBP_plot)]<-0
+    RBP_plot$Padj<-1
+    R_sum<-colSums(RBP_plot[,3:4])
+    for (j in 1:dim(RBP_plot)[1]){
+      RBP_plot[j,5]<-fisher.test(as.matrix(rbind(RBP_plot[j,3:4],R_sum)))$p.value
+    }
+    RBP_plot[,3:4]<-data.frame(prop.table(as.matrix(RBP_plot[,3:4]),margin = 2)*100)
+    RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="fdr")
+    axis_max<-floor(max(RBP_plot[,3:4])/5)*5+5
+    plot(RBP_plot[,c(3,4)],xlim=c(0,axis_max),ylim=c(0,axis_max),cex=1.5,bty="n",col=col[RBP_plot$col],
+         ylab=paste0(Name," bound FLEXIs (% RBP sites)"),xlab="ALl FLEXIs (% RBP sites)")
+    #sig_cutoff<-(RBP_plot$Padj<=0.05 & (RBP_plot[,3]>=3 | RBP_plot[,4]>=3))
+    sig_cutoff<-(RBP_plot$Padj<=pvalue_cutoff & (RBP_plot[,3]>=percent_cutoff | RBP_plot[,4]>=percent_cutoff))
+    abline(0,1,col="red")
+    text(RBP_plot[sig_cutoff,3:4],cex=0.5,pos = 4,
+         col=col[RBP_plot$col[sig_cutoff]],
+         labels = RBP_plot$RBP.name[sig_cutoff])
+}
+dev.off()
+
+#GO enrich via ShinyGO
+library(readxl)
+GO<-read_xlsx("Gene_by_clusterofRBPs.xlsx",sheet = 2)
+colnames(GO)[1]<-"C1"
+GO<-GO[GO$C1<0.001,c(4,1)]
+for (i in 1:5){
+  temp<-read_xlsx("Gene_by_clusterofRBPs.xlsx",sheet = i+2)
+  colnames(temp)[1]<-paste0("C",i+1)
+  temp<-temp[,c(4,1)]
+  temp<-temp[temp[,2]<0.001,]
+  GO<-merge(GO,temp,by=1,all=T)
+}
+GO[is.na(GO)]<-0.001
+GO[,2:7]<- -log10(GO[,2:7])
+rownames(GO)<-GO$`Functional Category`
+pdf("temp_fig/GO_RBP_by_cluster.pdf")
+Heatmap(GO[,2:7], 
+        row_names_gp = gpar(fontsize = 4),
+        col = colorRamp2(seq(3,9,length = 2),c("white", "red")),
+        column_names_gp = gpar(fontsize = 4),
+        cluster_rows = T, cluster_columns =F)
+dev.off()
+## Hallmark
+GO<-read_xlsx("hallmark_RBP_by_cluster.xlsx",sheet = 1)
+colnames(GO)[1]<-"C1"
+GO<-GO[,c(4,1)]
+for (i in 1:5){
+  temp<-read_xlsx("hallmark_RBP_by_cluster.xlsx",sheet = i+1)
+  colnames(temp)[1]<-paste0("C",i+1)
+  temp<-temp[,c(4,1)]
+  GO<-merge(GO,temp,by=1,all=T)
+}
+GO[is.na(GO)]<-1
+rownames(GO)<-GO$`Functional Category`
+GO[,2:7]<- -log10(GO[,2:7])
+pdf("temp_fig/Hallmark_RBP_by_cluster.pdf")
+Heatmap(GO[,2:7], 
+        row_names_gp = gpar(fontsize = 4),
+        col = colorRamp2(seq(0,9,length = 2),c("white", "red")),
+        column_names_gp = gpar(fontsize = 4),
+        cluster_rows = T, cluster_columns =F)
+dev.off()
+
+#snoRNA RBP scatter
+
+pdf("temp_fig/snoRNAFLEXI_RBP.pdf",width=10,height=5)
+col<-c("black","red","orange","skyblue")
+par(mfrow=c(1,2),pch=16,pty="s")
+snoRNA_FLEXI<-unique(dat$ID[dat$Has_snoRNA!="."])
+FLEXI_RBP<-data.frame(table(RBP_4cell_plasma$RBP[RBP_4cell_plasma$ID%in%snoRNA_FLEXI]))
+RBP_plot<-merge(RBP_fre,FLEXI_RBP,by=1,all=T)
+RBP_plot[is.na(RBP_plot)]<-0
+RBP_plot$Padj<-1
+R_sum<-colSums(RBP_plot[,3:4])
+for (j in 1:126){
+  RBP_plot[j,5]<-fisher.test(as.matrix(rbind(RBP_plot[j,3:4],R_sum,2,2)))$p.value
+}
+RBP_plot[,3:4]<-data.frame(prop.table(as.matrix(RBP_plot[,3:4]),margin = 2)*100)
+RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="fdr")
+axis_max<-floor(max(RBP_plot[,3:4])/5)*5+5
+plot(RBP_plot[,c(3,4)],xlim=c(0,axis_max),ylim=c(0,axis_max),cex=1.5,bty="n",col=col[RBP_plot$col],
+         ylab="snoRNA FLEXIs (% RBP sites)",xlab="ALl FLEXIs (% RBP sites)")
+sig_cutoff<-(RBP_plot$Padj<=0.01 & (RBP_plot[,3]>=3 | RBP_plot[,4]>=3))
+abline(0,1,col="red")
+text(RBP_plot[sig_cutoff,3:4],cex=0.5,pos = 4,
+    col=col[RBP_plot$col[sig_cutoff]],
+    labels = RBP_plot$RBP.name[sig_cutoff])
+
+plot(RBP_plot[,c(3,4)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",col=col[RBP_plot$col],
+     ylab="snoRNA FLEXIs (% RBP sites)",xlab="ALl FLEXIs (% RBP sites)")
+abline(0,1,col="red")
+sig_cutoff<-(RBP_plot$Padj<=0.01 & (RBP_plot[,3]>=1 | RBP_plot[,4]>=1))
+
+text(RBP_plot[sig_cutoff,3:4],cex=0.5,pos = 4,
+     col=col[RBP_plot$col[sig_cutoff]],
+     labels = RBP_plot$RBP.name[sig_cutoff])
+dev.off()
+
+
+####other chunk
+RBP_53<-Fun$Name[Fun$RBP_by_FLEXI>=30]
+RBP_53_col<-RBP_col[RBP_53,]
+RBP_53<-RBP_clus[rownames(RBP_clus)%in%RBP_53,]
+
+RBP_23<-RBP_53_col$RBP.name[RBP_53_col$col==1]
+RBP_23<-RBP_clus[RBP_23,]
+
+gower.dist <- daisy(RBP_23, metric = c("gower"))
+divisive.clust <- diana(as.matrix(gower.dist), 
+                        diss = TRUE, keep.diss = TRUE)
+#check silhouette plot
+aggl.clust.c <- hclust(gower.dist, method = "complete")
+ggplot(data = data.frame(t(cstats.table(gower.dist, divisive.clust, 15))), 
+       aes(x=cluster.number, y=within.cluster.ss)) + 
+  geom_point()+
+  geom_line()+
+  ggtitle("Divisive clustering") +
+  labs(x = "Num.of clusters", y = "Within clusters sum of squares (SS)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+ggplot(data = data.frame(t(cstats.table(gower.dist, divisive.clust, 15))), 
+       aes(x=cluster.number, y=avg.silwidth)) + 
+  geom_point()+
+  geom_line()+
+  ggtitle("Divisive clustering") +
+  labs(x = "Num.of clusters", y = "Average silhouette width") +
+  theme(plot.title = element_text(hjust = 0.5))
+ggplot(data = data.frame(t(cstats.table(gower.dist, aggl.clust.c, 15))), 
+       aes(x=cluster.number, y=avg.silwidth)) + 
+  geom_point()+
+  geom_line()+
+  ggtitle("Agglomerative clustering") +
+  labs(x = "Num.of clusters", y = "Average silhouette width") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+tsne<-Rtsne(gower.dist, dims = 2,
+                 perplexity=3, theta = 0.5,is_distance = TRUE)
+
+plot(tsne$Y,  main="t-SNE",
+     xlab="t-SNE1",ylab="t-SNE2",cex=1.5)
+
+dendro <- as.dendrogram(aggl.clust.c)
+labels<-labels(dendro.col)
+labels_col<-rep(0,23)
+labels_hei<-rep(0,23)
+labels_fre<-rep(0,23)
+for (i in 1:23){
+  labels_hei[i]<-length(unique(RBP_info_4cell$ID[RBP_info_4cell$RBP==labels[i]]))
+  labels_fre[i]<-RBP_fre$Cells[RBP_fre$RBP.name==labels[i]]
+  labels_col[i]<-col[RBP_col$col[rownames(RBP_col)==labels[i]]]
+}
+labels_hei<-labels_hei/max(labels_hei)
+labels_fre<-labels_fre/max(labels_fre)
+dendro.col <- dendro %>%
+  set("branches_k_color", 
+      k = 3)%>%
+  set("branches_lwd", 0.6) %>%
+  set("labels_colors", value = labels_col) %>% 
+  set("labels_cex", 0.5)
+pdf("temp_fig/Polar_dendrogram_plot53.pdf")
+circlize_dendrogram(dendro.col)
+dev.off()
+
+pdf("temp_fig/verticalden_53.pdf",width=11,height=6)
+ggplot(dendro.col, horiz = TRUE, theme = NULL)
+RBP_53_info<-RBP
+rownames(RBP_53_info)<-RBP_53_info$RBP.name
+RBP_53_info<-RBP_53_info[labels,4:22]
+par(mar = c(5,2,2,10))
+image(1:53,1:19,as.matrix(RBP_53_info),col=c("white","blue"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:19,labels = colnames(RBP_53_info),cex=0.5,tick = FALSE)
+axis(1,las=2,at = 1:53,labels = rownames(RBP_53_info),cex=0.5,tick = FALSE)
+dev.off()
+
+pdf("temp_fig/verticalden_23.pdf",width=11,height=6)
+ggplot(dendro.col, horiz = TRUE, theme = NULL)
+RBP_23_info<-RBP
+rownames(RBP_23_info)<-RBP_23_info$RBP.name
+RBP_23_info<-RBP_23_info[labels,4:22]
+par(mar = c(5,2,2,10))
+image(1:23,1:19,as.matrix(RBP_23_info),col=c("white","blue"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:19,labels = colnames(RBP_23_info),cex=0.5,tick = FALSE)
+axis(1,las=2,at = 1:23,labels = rownames(RBP_23_info),cex=0.5,tick = FALSE)
+dev.off()
+
+
+gower.dist.r <- daisy(RBP_53, metric = c("gower"))
+RBP_53.c<-data.frame(t(RBP_53))
+for (i in 1:53){
+  RBP_53.c[,i]<-factor(RBP_53.c[,i],levels = c("D","N","U"))
+}
+gower.dist.c <- daisy(RBP_53.c, metric = c("gower"))
+aggl.clust.r <- hclust(gower.dist.r, method = "complete")
+aggl.clust.c <- hclust(gower.dist.c, method = "complete")
+pdf("temp_fig/RBP_cluster.pdf",height=6,width=12)
+Heatmap(RBP_53, 
+        row_names_gp = gpar(fontsize = 7),col=c("royalblue","gray75","red"),
+        column_names_gp = gpar(fontsize = 7),
+        cluster_rows = color_branches(aggl.clust.r, k =3),
+        cluster_columns = color_branches(aggl.clust.c, k = 3))
+dev.off()
+
+
+#cluster by RBP and FLEXIs contain them, work not well,
+for (i in 1:126) {
+  RBP_name<-RBP_list[i]
+  if (i==1){
+    RBP_by_FLEXI<-data.frame("ID"=unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP==RBP_name]))
+    RBP_by_FLEXI$Counts<-1
+    colnames(RBP_by_FLEXI)[2]<-RBP_name
+  } else {
+    temp_table<-data.frame("ID"=unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP==RBP_name]))
+    temp_table$Counts<-1
+    colnames(temp_table)[2]<-RBP_name
+    RBP_by_FLEXI<-merge(RBP_by_FLEXI,temp_table,by=1,all=T)
+  }
+}
+RBP_by_FLEXI[is.na(RBP_by_FLEXI)]<-0
+rownames(RBP_by_FLEXI)<-RBP_by_FLEXI$ID
+RBP_by_FLEXI.t<-data.frame(t(RBP_by_FLEXI[,2:127]))
+RBP_by_FLEXI<-RBP_by_FLEXI[,2:127]
+
+for (i in 1:126){
+  RBP_by_FLEXI[,i]<-factor(RBP_by_FLEXI[,i],levels = c(0,1))
+}
+for (i in 1:4505){
+  RBP_by_FLEXI.t[,i]<-factor(RBP_by_FLEXI.t[,i],levels = c(0,1))
+}
+gower.dist.r <- daisy(RBP_by_FLEXI.t, metric = c("gower"))
+gower.dist.c <- daisy(RBP_by_FLEXI, metric = c("gower"))
+aggl.clust.r <- hclust(gower.dist.r, method = "complete")
+aggl.clust.c <- hclust(gower.dist.c, method = "complete")
+pdf("temp_fig/RBP_cluster.pdf",height=6,width=12)
+Heatmap(RBP_by_FLEXI.t, 
+        row_names_gp = gpar(fontsize = 7),
+        cluster_rows = color_branches(aggl.clust.r, k =3),
+        cluster_columns = color_branches(aggl.clust.c, k = 3))
+dev.off()
