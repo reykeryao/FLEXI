@@ -1,0 +1,38 @@
+Acc<-dat[i,2]
+dat1<-read.delim(paste0(Acc,".tsv"))
+if (i==1 || i==30 || i==7){
+dat1<-dat1[,c(3,7,9)]
+dat1<-dat1[dat1$baseMean>0,]
+Total<-dim(dat1)[1]
+dat1<-dat1[complete.cases(dat1),]
+dat[i,7:9]<-c(Total,sum(dat1$padj<0.05 & dat1$log2FoldChange>0),sum(dat1$padj<0.05 & dat1$log2FoldChange<0))
+
+dat1<-read.delim(paste0(Acc,"BoundHostExp.csv"),sep=",")
+dat1<-dat1[,c(3,7,9)]
+dat1<-dat1[dat1$baseMean>0,]
+Total<-dim(dat1)[1]
+dat1<-dat1[complete.cases(dat1),]
+dat[i,10:12]<-c(Total,sum(dat1$padj<0.05 & dat1$log2FoldChange>0),sum(dat1$padj<0.05 & dat1$log2FoldChange<0))
+
+} else {
+
+dat1<-dat1[,c(1,2,6)]
+dat1<-dat1[dat1$baseMean>0,]
+Total<-dim(dat1)[1]
+dat1<-dat1[complete.cases(dat1),]
+dat[i,7:9]<-c(Total,sum(dat1$padj<0.05 & dat1$log2FoldChange>0),sum(dat1$padj<0.05 & dat1$log2FoldChange<0))
+
+dat1<-read.delim(paste0(Acc,"BoundHostExp.csv"),sep=",",row.names=1)
+dat1<-dat1[,c(1,2,6)]
+dat1<-dat1[dat1$baseMean>0,]
+Total<-dim(dat1)[1]
+dat1<-dat1[complete.cases(dat1),]
+dat[i,10:12]<-c(Total,sum(dat1$padj<0.05 & dat1$log2FoldChange>0),sum(dat1$padj<0.05 & dat1$log2FoldChange<0))
+}
+dat[i,13]<-fisher.test(matrix(c(as.matrix(dat[i,7:8]),as.matrix(dat[i,10:11])),2,2))$p.value
+dat[i,14]<-fisher.test(matrix(c(as.matrix(dat[i,8:9]),as.matrix(dat[i,11:12])),2,2))$p.value
+
+ENCFF266JFK 1
+ENCFF597FJT 30
+ENCFF929SZO 7
+

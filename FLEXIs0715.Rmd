@@ -38,6 +38,7 @@ mapped_reads<-c(305.069837,251.558067,268.210336,477.543790,207.491024,
 names(mapped_reads)<-colnames(dat[,82:92])
 GRCh38<-read.delim("GRCh38.93.intron_deduped.tsv")
 RBP<-read.delim("150_RBP_AGO_DICER.info")
+
 Cell<-read.table("4cell_plasma_RBP.counts",col.names=c("ID","Cells"))
 FLEXI<-read.table("all_FLEXI_RBP.counts",col.names=c("ID","All_FLEXI"))
 Intron<-read.table("all_intron_RBP.counts",col.names=c("ID","All_Intron"))
@@ -59,13 +60,14 @@ FLEXI_CPM<-dat[,c(1,8,89:91)]
 Unfrag_total<-mapped_reads[8:10]
 FLEXI_CPM[,3:5]<-t(t(FLEXI_CPM[,3:5])/Unfrag_total)
 #Assign log2CPM of -10 for those with 0 count
-FLEXI_CPM$K562_repo<-rowMedians(as.matrix(dat[,56:63]))>0
-FLEXI_CPM$HEK_repo<-rowMedians(as.matrix(dat[,64:71]))>0
-FLEXI_CPM$Hela_repo<-rowMedians(as.matrix(dat[,72:81]))>0
+FLEXI_CPM$K562_repo<-apply(dat[,56:63],1,FUN=function(x){sum(x>0)})
+FLEXI_CPM$HEK_repo<-apply(dat[,64:71],1,FUN=function(x){sum(x>0)})
+FLEXI_CPM$Hela_repo<-apply(dat[,72:81],1,FUN=function(x){sum(x>0)})
 FLEXI_CPM<-FLEXI_CPM[rowSums(FLEXI_CPM[,3:5])>0,]
 temp<-FLEXI_CPM[,3:5]
 temp[temp==0]<-2^-10
 FLEXI_CPM[,3:5]<-temp
+rownames(FLEXI_CPM)<-FLEXI_CPM$ID
 FLEXI_CPM<-FLEXI_CPM[,2:8]
 #Calculate CPM of Unfragmented cellular RNA
 Cell_counts<-read.delim("combined_run.counts")
@@ -92,14 +94,14 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
 text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
-sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562>=0.03 &
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562>2^-10  &
                       FLEXI_by_GID$Hela==2^-10 &
-                      FLEXI_by_GID$K562_repo,]
-sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela>=0.03 &
+                      FLEXI_by_GID$K562_repo>=8,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela>2^-10  &
                       FLEXI_by_GID$K562==2^-10 &
-                      FLEXI_by_GID$Hela_repo,]
+                      FLEXI_by_GID$Hela_repo>=10,]
 points(log2(sig.y[,c(2,4)]),col="red")
-points(log2(sig.x[,c(2,4)]),col="blue")
+points(log2(sig.x[,c(2,4)]),col="yellow")
 #Unfrag scatter
 #FELXIs between K562 and HeLa
 FLEXI_by_GID<-Cell_counts[!(Cell_counts[,2]==2^-10 & Cell_counts[,4]==2^-10),]
@@ -114,8 +116,8 @@ sig.all<-intersect(sig.x,sig.y)
 sig.x<-setdiff(sig.x,sig.y)
 sig.y<-setdiff(sig.y,sig.all)
 points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(2,4)]),col="red")
-points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,4)]),col="blue")
-points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(2,4)]),col="green")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,4)]),col="yellow")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(2,4)]),col="orange")
 
 
 #FLEXIs scatter
@@ -126,14 +128,14 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
 text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
-sig.x<-FLEXI_by_GID[FLEXI_by_GID$HEK>=0.03 &
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$HEK>2^-10  &
                       FLEXI_by_GID$Hela==2^-10 &
-                      FLEXI_by_GID$HEK_repo,]
-sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela>=0.03 &
+                      FLEXI_by_GID$HEK_repo>=8,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela>2^-10  &
                       FLEXI_by_GID$HEK==2^-10 &
-                      FLEXI_by_GID$Hela_repo,]
+                      FLEXI_by_GID$Hela_repo>=10,]
 points(log2(sig.y[,c(3,4)]),col="red")
-points(log2(sig.x[,c(3,4)]),col="blue")
+points(log2(sig.x[,c(3,4)]),col="yellow")
 #Unfrag scatter
 #FELXIs between HEK and HeLa
 FLEXI_by_GID<-Cell_counts[!(Cell_counts[,3]==2^-10 & Cell_counts[,4]==2^-10),]
@@ -148,8 +150,8 @@ sig.all<-intersect(sig.x,sig.y)
 sig.x<-setdiff(sig.x,sig.y)
 sig.y<-setdiff(sig.y,sig.all)
 points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(3,4)]),col="red")
-points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(3,4)]),col="blue")
-points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(3,4)]),col="green")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(3,4)]),col="yellow")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(3,4)]),col="orange")
 
 #FELXIs between K562 and HEK
 FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,3]==2^-10),]
@@ -158,14 +160,14 @@ abline(0,1,col="red")
 cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "spearman"),digits=2, format="f")
 cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
 text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
-sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562>=0.03 &
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562>2^-10  &
                       FLEXI_by_GID$HEK==2^-10 &
-                      FLEXI_by_GID$K562_repo,]
-sig.y<-FLEXI_by_GID[FLEXI_by_GID$HEK>=0.03 &
+                      FLEXI_by_GID$K562_repo>=8,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$HEK>2^-10  &
                       FLEXI_by_GID$K562==2^-10 &
-                      FLEXI_by_GID$HEK_repo,]
+                      FLEXI_by_GID$HEK_repo>=8,]
 points(log2(sig.y[,c(2,3)]),col="red")
-points(log2(sig.x[,c(2,3)]),col="blue")
+points(log2(sig.x[,c(2,3)]),col="yellow")
 
 #Unfrag scatter
 #FELXIs between K562 and HEK
@@ -177,24 +179,29 @@ cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2
 text(10,-5,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
 sig.x<-unique(sig.x$GID)
 sig.y<-unique(sig.y$GID)
+sig.all<-intersect(sig.x,sig.y)
+sig.x<-setdiff(sig.x,sig.y)
+sig.y<-setdiff(sig.y,sig.all)
 points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(2,3)]),col="red")
-points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,3)]),col="blue")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,3)]),col="yellow")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.all,c(2,3)]),col="orange")
 dev.off()
 #remove the temporay object created for this plot
 rm(list=c("Cell_counts","FLEXI_by_GID","FLEXI_CPM","cor_p","cor_s",
-          "Unfrag_total","GID_list","sig.x","sig.y"."sig.all"))
-
+          "Unfrag_total","GID_list","sig.x","sig.y","sig.all"))
+```
+```{r}
 #Scatter plots in Fig7B
 #Make reproducibility marker (detected in ≥ 50% of dataset)
 #Make combined healthy column  
 Repo<-dat[,c(1,32:34,29:31,26:28,35:37,38:47)]
 Repo<-Repo[rowSums(Repo[,2:23])>0,]
-Repo$BCH3_repro<-rowMedians(as.matrix(Repo[,2:4]))>0
-Repo$BCH4_repro<-rowMedians(as.matrix(Repo[,5:7]))>0
-Repo$BC3_repro<-rowMedians(as.matrix(Repo[,8:10]))>0
-Repo$BC4_repro<-rowMedians(as.matrix(Repo[,11:13]))>0
-Repo$MDA_repro<-rowMins(as.matrix(Repo[,14:15]))>0
-Repo$MCF_repro<-apply(Repo[,16:23],MARGIN = 1,FUN=function(x){sort(x)[5]>0})
+Repo$BCH3_repro<-apply(Repo[,2:4],1,FUN=function(x){sum(x>0)})
+Repo$BCH4_repro<-apply(Repo[,5:7],1,FUN=function(x){sum(x>0)})
+Repo$BC3_repro<-apply(Repo[,8:10],1,FUN=function(x){sum(x>0)})
+Repo$BC4_repro<-apply(Repo[,11:13],1,FUN=function(x){sum(x>0)})
+Repo$MDA_repro<-apply(Repo[,14:15],1,FUN=function(x){sum(x>0)})
+Repo$MCF_repro<-apply(Repo[,16:23],1,FUN=function(x){sum(x>0)})
 Repo$PatientA_H<-rowSums(Repo[,c(2:4)])
 Repo$PatientB_H<-rowSums(Repo[,c(5:7)])
 Repo$PatientA_C<-rowSums(Repo[,c(8:10)])
@@ -209,7 +216,7 @@ dat1[dat1==0]<-2^-10
 Repo[,8:13]<-dat1
 rm(dat1)
 Repo$Combined_H<-rowMeans(Repo[,8:9])
-Repo$Combined_H_repo<-Repo$BCH3_repro | Repo$BCH4_repro
+Repo$Combined_H_repo<-Repo$BCH3_repro + Repo$BCH4_repro
 Repo<-Repo[,c(1,15,2:7,14,8:13)]
 Repo$ID<-as.character(Repo$ID)
 Repo<-separate(Repo,ID,into=c("IID","GID"),sep = "___",remove = F,extra="drop")
@@ -241,10 +248,14 @@ cor_s=formatC(cor(FLEXI_by_GID[,13],FLEXI_by_GID[,15],method = "spearman"),digit
 cor_p=formatC(cor(FLEXI_by_GID[,13],FLEXI_by_GID[,15],method = "pearson"),digits=2, format="f")
 text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
 #cancer ≥ 0.05 RPM and reproducible FLEXIs (detected in ≥ 50% dataset)
-points(log2(FLEXI_by_GID[FLEXI_by_GID$PatientA_H==2^-10 & FLEXI_by_GID$PatientA_C>=0.05 & 
-                           FLEXI_by_GID$PatientA_C_repro,c(13,15)]),col="red")
-GID_list<-unique(FLEXI_by_GID$GID[FLEXI_by_GID$PatientA_H==2^-10 & FLEXI_by_GID$PatientA_C>=0.05 & 
-                                    FLEXI_by_GID$PatientA_C_repro])
+points(log2(FLEXI_by_GID[FLEXI_by_GID$PatientA_H==2^-10 & FLEXI_by_GID$PatientA_C>2^-10  & 
+                           FLEXI_by_GID$PatientA_C_repro>=3,c(13,15)]),col="red")
+GID_list<-unique(FLEXI_by_GID$GID[FLEXI_by_GID$PatientA_H==2^-10 & 
+                                    FLEXI_by_GID$PatientA_C>=0.01 & 
+                                    FLEXI_by_GID$PatientA_C_repro>=3])
+print(unique(FLEXI_by_GID$ID[FLEXI_by_GID$PatientA_H==2^-10 & 
+                                    FLEXI_by_GID$PatientA_C>2^-10  & 
+                                    FLEXI_by_GID$PatientA_C_repro>=3]))
 #patientA fragmented cellular RNA scatter plot
 FLEXI_by_GID<-Frag_by_FLEXI[!(Frag_by_FLEXI[,2]==2^-10 & Frag_by_FLEXI[,4]==2^-10),]
 plot(log2(FLEXI_by_GID[,c(2,4)]),xlim=c(-10,15),ylim=c(-10,15))
@@ -261,10 +272,11 @@ cor_s=formatC(cor(FLEXI_by_GID[,14],FLEXI_by_GID[,16],method = "spearman"),digit
 cor_p=formatC(cor(FLEXI_by_GID[,15],FLEXI_by_GID[,16],method = "pearson"),digits=2, format="f")
 text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
 #cancer ≥ 0.05 RPM and reproducible FLEXIs (detected in ≥ 50% dataset)
-points(log2(FLEXI_by_GID[FLEXI_by_GID$PatientB_H==2^-10 & FLEXI_by_GID$PatientB_C>=0.05 & 
-                           FLEXI_by_GID$PatientB_C_repro,c(14,16)]),col="red")
-GID_list<-unique(FLEXI_by_GID$GID[FLEXI_by_GID$PatientB_H==2^-10 & FLEXI_by_GID$PatientB_C>=0.05 & 
-                                    FLEXI_by_GID$PatientB_C_repro])
+points(log2(FLEXI_by_GID[FLEXI_by_GID$PatientB_H==2^-10 & FLEXI_by_GID$PatientB_C>2^-10  & 
+                           FLEXI_by_GID$PatientB_C_repro>=3,c(14,16)]),col="red")
+GID_list<-unique(FLEXI_by_GID$GID[FLEXI_by_GID$PatientB_H==2^-10 & 
+                                    FLEXI_by_GID$PatientB_C>=0.01  &
+                                    FLEXI_by_GID$PatientB_C_repro>=3])
 #patientB fragmented cellular RNA scatter plot
 FLEXI_by_GID<-Frag_by_FLEXI[!(Frag_by_FLEXI[,3]==2^-10 & Frag_by_FLEXI[,5]==2^-10),]
 plot(log2(FLEXI_by_GID[,c(3,5)]),xlim=c(-10,15),ylim=c(-10,15))
@@ -714,20 +726,28 @@ dev.off()
 rm(list=c("temp","dat1","up1","up2","up3","up4","set1","set2","set3","set4","set"))
 
 #FIg3D, RBP scatter plot in conserved FELXIs, phastCons ≥ 0.99
-Phast99<-read.table("44phastCon99.RBP.counts",col.names=c("ID","P99"))
-Phast<-merge(Cell,Phast99,by=1,all=T)
+FLEXI<-dat[rowMaxs(as.matrix(dat[,88:91]))>0,]
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+RBP_fre<-data.frame(table(RBP_4cell_plasma$RBP))
+colnames(RBP_fre)<-c("RBP","Cell")
+Phast99<-dat$ID[dat$PhastCon30>=0.99 & rowSums(dat[,88:91])>0]
+Phast99_fre<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%Phast99,]
+Phast99_fre<-data.frame(table(Phast99_fre$RBP))
+colnames(Phast99_fre)<-c("RBP","Phast99")
+Phast<-merge(RBP_fre,Phast99_fre,by=1,all=T)
 Phast[is.na(Phast)]<-0
 rownames(Phast)<-Phast$ID
 Phast$pvalue<-1
 R_sum<-colSums(Phast[,2:3])
 for (i in 1:126){
-  Phast[i,4]<-fisher.test(as.matrix(rbind(Phast[i,2:3],R_sum),2,2))$p.value
+  Phast[i,4]<-fisher.test(as.matrix(rbind(Phast[i,2:3],R_sum)))$p.value
 }
-
+Phast$padj<-p.adjust(Phast$pvalue,method="fdr")
 Phast[,2:3]<-data.frame(prop.table(as.matrix(Phast[,2:3]),margin = 2)*100)
 Phast<-merge(Phast,RBP[,c(1,4,5,11)],by=1)
 Phast$col<-(Phast$Splicing.regulation+Phast$Spliceosome)/3+Phast$microRNA.processing
-Phast<-Phast[,c(1:4,8)]
 
 pdf("Figures/Fig3D.pdf",height=6,width=12)
 par(mfrow=c(1,2),pty="s",pch=16)
@@ -737,8 +757,8 @@ points(Phast[Phast$col<1 & Phast$col>0,c(2,3)],col="red",cex=1.5)
 points(Phast[Phast$col==1,c(2,3)],col="orange",cex=1.5)
 points(Phast[Phast$col>1,c(2,3)],col="skyblue",cex=1.5)
 abline(0,1,col="red")
-text(Phast[Phast$pvalue<=0.05,c(2,3)],pos = 3,cex=0.5,
-     labels = Phast$ID[Phast$pvalue<=0.05])
+#text(Phast[Phast$pvalue<=0.05,c(2,3)],pos = 3,cex=0.5,
+#     labels = Phast$ID[Phast$pvalue<=0.05])
 
 plot(Phast[Phast$col==0,c(2,3)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",
      xlab="All FELXIs (% RBP sites)",ylab="Conserved FELXIs (% RBP sites)")
@@ -746,42 +766,84 @@ points(Phast[Phast$col<1 & Phast$col>0,c(2,3)],col="red",cex=1.5)
 points(Phast[Phast$col==1,c(2,3)],col="orange",cex=1.5)
 points(Phast[Phast$col>1,c(2,3)],col="skyblue",cex=1.5)
 abline(0,1,col="red")
-text(Phast[Phast$pvalue<=0.05,c(2,3)],pos = 3,cex=0.5,
-     labels = Phast$ID[Phast$pvalue<=0.05])
+#text(Phast[Phast$pvalue<=0.05,c(2,3)],pos = 3,cex=0.5,
+#     labels = Phast$ID[Phast$pvalue<=0.05])
 dev.off()
-rm(list=c("Phast","Phast99","R_sum"))
+rm(list=c("Phast","Phast99","R_sum","FLEXI","Phast99_fre","RBP_4cell_plasma","RBP_fre"))
 #Fig4B
-pdf("Figures/Fig4B.pdf",height=6,width=12)
-par(mfrow=c(1,2),pty="s",pch=16)
-RBP_fre<-RBP[,c(1,46,48,49)]
-RBP_fre$All_Intron<-RBP$All_Intron-RBP$All_FLEXI
-R_sum<-colSums(RBP_fre[,2:4])
+FLEXI<-dat[rowMaxs(as.matrix(dat[,88:91]))>0,]
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+RBP_fre<-data.frame(table(RBP_4cell_plasma$RBP))
+
+all_intron_RBP<-read.table(gzfile("all_intron_RBP_inter.info.gz"),col.names=c("FLEXI","Len","RBP"))
+all_intron_RBP<-unique(all_intron_RBP)
+all_intron_RBP_short<-all_intron_RBP[all_intron_RBP$Len<=300,c(1,3)]
+all_intron_RBP<-all_intron_RBP[all_intron_RBP$Len>300,c(1,3)]
+long_fre<-data.frame(table(all_intron_RBP$RBP))
+#make Other short introns
+all_intron_RBP_short<-all_intron_RBP_short[!all_intron_RBP_short$FLEXI%in%FLEXI$ID,]
+OtherShort_fre<-data.frame(table(all_intron_RBP_short$RBP))
+RBP_fre<-merge(RBP_fre,OtherShort_fre,by=1,all=T)
+RBP_fre<-merge(RBP_fre,long_fre,by=1,all=T)
+RBP_fre[is.na(RBP_fre)]<-0
+colnames(RBP_fre)<-c("RBP","Cell","Other SHort introns","Long introns")
+RBP_fre<-merge(RBP_fre,RBP[,c(1,4,5,11)],by=1)
+RBP_fre$col<-(RBP_fre$Splicing.regulation+RBP_fre$Spliceosome)/3+RBP_fre$microRNA.processing
+RBP_fre<-RBP_fre[,c(1:4,8)]
 RBP_fre$Bpvlue<-1
 RBP_fre$Cpvlue<-1
+R_sum<-colSums(RBP_fre[,2:4])
 for (i in 1:152){
-  RBP_fre[i,5]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,3)],R_sum[c(1,2)]),2,2))$p.value
-  RBP_fre[i,6]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,4)],R_sum[c(1,3)]),2,2))$p.value
+  RBP_fre[i,6]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,3)],R_sum[c(1,2)])))$p.value
+  RBP_fre[i,7]<-fisher.test(as.matrix(rbind(RBP_fre[i,c(2,4)],R_sum[c(1,3)])))$p.value
 }
 RBP_fre[,2:4]<-data.frame(prop.table(as.matrix(RBP_fre[,2:4]),margin = 2)*100)
-RBP_fre$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
-RBP_fre<-RBP_fre[,c(1,3,2,4,5,6,7)]
-plot(RBP_fre[RBP_fre$col==0,2:3],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
-     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
-points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,2:3],col="red",cex=1.5)
-points(RBP_fre[RBP_fre$col==1,2:3],col="orange",cex=1.5)
-points(RBP_fre[RBP_fre$col>1,2:3],col="skyblue",cex=1.5)
-text(RBP_fre[(RBP_fre$Bpvlue<=0.05 & (RBP_fre[,2]>=4 | RBP_fre[,3]>=4)),2:3],
-     labels = RBP_fre$RBP.name[RBP_fre$Bpvlue<=0.05& (RBP_fre[,2]>=4 | RBP_fre[,3]>=4)])
-abline(0,1,col="red")
+RBP_fre$Bpvlue<-p.adjust(RBP_fre$Bpvlue,method="fdr")
+RBP_fre$Cpvlue<-p.adjust(RBP_fre$Cpvlue,method="fdr")
 
-plot(RBP_fre[RBP_fre$col==0,c(4,3)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
-     xlab="All RBP binding sites (%)",ylab="FLEXIs (% RBP sites)")
-points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(4,3)],col="red",cex=1.5)
-points(RBP_fre[RBP_fre$col==1,c(4,3)],col="orange",cex=1.5)
-points(RBP_fre[RBP_fre$col>1,c(4,3)],col="skyblue",cex=1.5)
+
+pdf("Figures/Fig4B.pdf",height=8,width=8)
+par(mfrow=c(2,2),pty="s",pch=16)
+
+plot(RBP_fre[RBP_fre$col==0,c(3,2)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
+     ylab="FLEXIs (% RBP sites)",xlab="Other short introns (% RBP sites)")
+points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(3,2)],col="red",cex=1.5)
+points(RBP_fre[RBP_fre$col==1,c(3,2)],col="orange",cex=1.5)
+points(RBP_fre[RBP_fre$col>1,c(3,2)],col="skyblue",cex=1.5)
 abline(0,1,col="red")
-text(RBP_fre[(RBP_fre$Cpvlue<=0.05 & (RBP_fre[,4]>=4 | RBP_fre[,3]>=4)),2:3],
-     labels = RBP_fre$RBP.name[RBP_fre$Cpvlue<=0.05& (RBP_fre[,4]>=4 | RBP_fre[,3]>=4)])
+text(RBP_fre[(RBP_fre$Bpvlue<=0.01 & (RBP_fre[,2]>=4 | RBP_fre[,3]>=4)),c(3,2)],
+     labels = RBP_fre$RBP[RBP_fre$Bpvlue<=0.01 & (RBP_fre[,2]>=4 | RBP_fre[,3]>=4)])
+#subpanel
+plot(RBP_fre[RBP_fre$col==0,c(3,2)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",
+     ylab="FLEXIs (% RBP sites)",xlab="Other short introns (% RBP sites)")
+points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(3,2)],col="red",cex=1.5)
+points(RBP_fre[RBP_fre$col==1,c(3,2)],col="orange",cex=1.5)
+points(RBP_fre[RBP_fre$col>1,c(3,2)],col="skyblue",cex=1.5)
+abline(0,1,col="red")
+text(RBP_fre[(RBP_fre$Bpvlue<=0.01 & (RBP_fre[,2]>=2 | RBP_fre[,3]>=2)),c(3,2)],
+     labels = RBP_fre$RBP[RBP_fre$Bpvlue<=0.01 & (RBP_fre[,2]>=2 | RBP_fre[,3]>=2)])
+
+
+plot(RBP_fre[RBP_fre$col==0,c(4,2)],xlim=c(0,20),ylim=c(0,20),cex=1.5,bty="n",
+     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
+points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(4,2)],col="red",cex=1.5)
+points(RBP_fre[RBP_fre$col==1,c(4,2)],col="orange",cex=1.5)
+points(RBP_fre[RBP_fre$col>1,c(4,2)],col="skyblue",cex=1.5)
+abline(0,1,col="red")
+text(RBP_fre[(RBP_fre$Cpvlue<=0.01 & (RBP_fre[,4]>=4 | RBP_fre[,2]>=4)),c(4,2)],
+     labels = RBP_fre$RBP[RBP_fre$Cpvlue<=0.01 & (RBP_fre[,4]>=4 | RBP_fre[,2]>=4)])
+
+plot(RBP_fre[RBP_fre$col==0,c(4,2)],xlim=c(0,4),ylim=c(0,4),cex=1.5,bty="n",
+     ylab="FLEXIs (% RBP sites)",xlab="Long introns (% RBP sites)")
+points(RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,c(4,2)],col="red",cex=1.5)
+points(RBP_fre[RBP_fre$col==1,c(4,2)],col="orange",cex=1.5)
+points(RBP_fre[RBP_fre$col>1,c(4,2)],col="skyblue",cex=1.5)
+abline(0,1,col="red")
+text(RBP_fre[(RBP_fre$Cpvlue<=0.01 & (RBP_fre[,4]>=2 | RBP_fre[,2]>=2)),c(4,2)],
+     labels = RBP_fre$RBP[RBP_fre$Cpvlue<=0.01 & (RBP_fre[,4]>=2 | RBP_fre[,2]>=2)])
+
 dev.off()
 rm(RBP_fre)
 #Fig4A and S7

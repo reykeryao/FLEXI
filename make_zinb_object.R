@@ -6,7 +6,7 @@ library(zinbwave)
 args<-commandArgs(trailingOnly=TRUE)
 cutoff<-args[1]
 dat<-read.delim("all.FLEXI")
-dat1<-read.delim("../../Old_UF_fragmented/full_length_intron.counts")
+dat1<-read.delim("Bio2.FLEXI.counts")
 dat<-dat[rowSums(dat[,38:81])>0,c(1,38:81)]
 colnames(dat)<-c("ID",paste0("MDA_1_",1:2),paste0("MCF_",1:8),
                  paste0("UHRR_1_",1:8),paste0("K561_1_",1:8),
@@ -29,6 +29,33 @@ sub_mapped_reads<-c(70563696,83971287,93530133,96188889,84195614,95958499,901549
                     5700094,7258578,6925758,5408190,6342889,6941957,9282711,
                     99564097,81230668)
 sub_mapped_reads<-sub_mapped_reads/1e6
+mapped_reads<-c(sum(sub_mapped_reads[19:20]),sum(sub_mapped_reads[21:28]),
+                sum(sub_mapped_reads[29:36]),sum(sub_mapped_reads[37:44]),
+                sum(sub_mapped_reads[45:49]),sum(sub_mapped_reads[50:59]),
+                sum(sub_mapped_reads[60:66]),sum(sub_mapped_reads[67:68]))
+names(mapped_reads)<-c("MDA1","UHRR1","K562-1","HEK1","MDA2","UHRR2","K562-2","HEK2")
+
+dat1<-dat
+dat1$MDA1<-rowSums(dat1[,20:21])
+dat1$UHRR1<-rowSums(dat1[,22:29])
+dat1$K562_1<-rowSums(dat1[,30:37])
+dat1$HEK1<-rowSums(dat1[,38:45])
+dat1$MDA2<-rowSums(dat1[,46:50])
+dat1$UHRR2<-rowSums(dat1[,51:60])
+dat1$K562_2<-rowSums(dat1[,61:67])
+dat1$HEK2<-rowSums(dat1[,68:69])
+dat1$MDA1_repo<-rowSums(dat1[,20:21]>0)
+dat1$UHRR1_repo<-rowSums(dat1[,22:29]>0)
+dat1$K5621_repo<-rowSums(dat1[,30:37]>0)
+dat1$HEK1_repo<-rowSums(dat1[,38:45]>0)
+dat1<-dat1[,c(1,70:81)]
+dat1[,2:9]<-t(t(dat1[,2:9])/mapped_reads)
+
+temp<-dat1[,2:9]
+temp[temp==0]<-2^-10
+dat1[,2:9]<-temp
+dat1[,2:9]<-log2(dat1[,2:9])
+
 dat_clus<-dat
 # and save the object
 dat<-dat_clus
