@@ -35,7 +35,7 @@ GRCh38<-read.delim("GRCh38.93.intron_deduped.tsv")
 #Fig1A, upset plot of FLEXIs, FLEXI host genes from cellular RNA and plasma
 #FLEXIs
 cut_off=1
-postscript("Figures/Fig1A_1.eps",height=4,width=8)
+pdf("Figures/Fig1A_1.pdf",height=4,width=8)
 set_1 <- as.character(dat$ID[dat$UHRR>=cut_off])
 set_2 <- as.character(dat$ID[dat$K562>=cut_off])
 set_3 <- as.character(dat$ID[dat$HEK>=cut_off])
@@ -65,7 +65,7 @@ decorate_annotation("Counts", {grid.text(cs[1:2], x = 1:2, y = unit(cs[1:2], "na
             gp = gpar(fontsize = 6), rot = 45)})
 dev.off()
 #FLEXI host genes
-postscript("Figures/Fig1A_2.eps",height=4,width=8)
+pdf("Figures/Fig1A_2.pdf",height=4,width=8)
 set_1 <- unique(dat$GID[dat$UHRR>=cut_off])
 set_2 <- unique(dat$GID[dat$K562>=cut_off])
 set_3 <- unique(dat$GID[dat$HEK>=cut_off])
@@ -99,6 +99,7 @@ rm(list=c("set_1","set_2","set_3","set_4","set_5","set","m","cut_off","ss","cs")
 
 # Fig 1B: table of mirtron, agotron, etc
 # generate the table for Fig1B
+
 '''
 Fig1B<-rbind(
   "K-562"=c(length(dat$ID[dat$K562>0]),
@@ -815,7 +816,7 @@ cut_off=0.01
 FLEXI_CPM<-dat[,c(1,8,82:87)]
 FLEXI_CPM<-FLEXI_CPM[rowSums(FLEXI_CPM[,3:8])>0,]
 FLEXI_CPM[,3:8]<-t(t(FLEXI_CPM[,3:8])/mapped_reads[1:6])
-postscript("Figures/Fig8A_1.eps",height=4,width=8)
+pdf("Figures/Fig8A_1.pdf",height=4,width=8)
 set_1 <- as.character(FLEXI_CPM$ID[(FLEXI_CPM$BCH3+FLEXI_CPM$BCH4)>=cut_off])
 set_2 <- as.character(FLEXI_CPM$ID[FLEXI_CPM$BC3>=cut_off])
 set_3 <- as.character(FLEXI_CPM$ID[FLEXI_CPM$BC4>=cut_off])
@@ -848,7 +849,7 @@ decorate_annotation("Counts", {grid.text(cs[od][c(1:5,12:16,31)], x = c(1:5,12:1
                                          default.units = "native", just = c("left", "bottom"), 
                                          gp = gpar(fontsize = 6), rot = 45)})
 dev.off()
-postscript(paste0("Figures/Fig8A_2.eps"),height=4,width=8)
+pdf("Figures/Fig8A_2.pdf",height=4,width=8)
 set_1 <- unique(FLEXI_CPM$GID[(FLEXI_CPM$BCH3+FLEXI_CPM$BCH4)>=cut_off])
 set_2 <- unique(FLEXI_CPM$GID[FLEXI_CPM$BC3>=cut_off])
 set_3 <- unique(FLEXI_CPM$GID[FLEXI_CPM$BC4>=cut_off])
@@ -928,7 +929,7 @@ colnames(Frag_by_FLEXI)<-c("ID","PatientA_Healthy","PatientB_Healthy",
                            "PatientA_Cancer","PatientB_Cancer")
 
 
-postscript("Figures/Fig8B.eps",width = 10,height=10,horizontal = F)
+pdf("Figures/Fig8B.pdf",width = 10,height=10)
 par(pch=16,mfrow=c(2,2),pty="s")
 #patientA FLEXI scatter
 FLEXI_by_GID<-Repo[!(Repo[,13]==2^-10 & Repo[,15]==2^-10),]
@@ -1240,6 +1241,7 @@ colnames(dPCR)<-c("Copies/cell","Literature\nvalue","HEK-293T\nbefore corr","HeL
                   "HEK-293T\nafter corr","HeLa S3\nafter corr","UHRR\nafter corr")
 grid.table(dPCR,theme=tt,rows=NULL)
 dev.off()
+
 '''
 check_list<-c(2232,5094,7563,6003,5726,2183,549,1489,3377,2568)
 RPM_eve<-FourCell[rownames(FourCell)%in%check_list,c(1,90:91,88)]
@@ -1486,13 +1488,139 @@ dat<-read.delim("all.FLEXI")
 
 #FigS14 created by RBP_clus_byCellType.R
 
-#FigS15
-need work here
 
+#FigS15 individual RBP scatter and density plots
+#individual 4 panel for each 47 rbPs
+FourCellFLEXI<-dat$ID[rowSums(dat[,88:91])>0]
+FourCell<-dat[dat$ID%in%FourCellFLEXI,]
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FourCellFLEXI,]
+RBP_4cell_plasma<-unique(RBP_4cell_plasma)
+RBP_fre<-data.frame(table(RBP_4cell_plasma$RBP))
+colnames(RBP_fre)<-c("RBP.name","Cells")
+RBP$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
+RBP_fre<-merge(RBP_fre,RBP[,c(1,46)],by=1)
+RBP_fre[RBP_fre$col>1,3]<-4
+RBP_fre[RBP_fre$col==1,3]<-3
+RBP_fre[RBP_fre$col<1 & RBP_fre$col>0,3]<-2
+RBP_fre[RBP_fre$col==0,3]<-1
+RBP_fre<-RBP_fre[,c(1,3,2)]
 
+percent_cutoff<-2
+pvalue_cutoff<-0.05
+col<-c("black","red","orange","skyblue")
+RBP_list<-sort(RBP53$RBP.name)
+RBP_list<-RBP_list[c(7,8,19,22,23,25,37,43,50,
+                     4,6,12,16,32,46,49,52,53,
+                     44,45,
+                     18,47,48,
+                     1,10,24,40,
+                     2,9,
+                     3,5,11,29,31,39,
+                     13,14,15,17,20,21,26,27,28,30,33,34,35,36,38,41,42,51)]
+
+pdf("Figures/FigS15.pdf",width=8,height=20,onefile = T)
+par(mfrow=c(10,4),pch=16,pty="s",mar=c(2,2,2,2))
+for (i in 1:53) {
+  FLEXI_list<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%RBP_list[i]])
+  FLEXI_dat<-FourCell[FourCell$ID%in%FLEXI_list,]
+  temp2<-FourCell[!FourCell$ID%in%FLEXI_list,]
+  FLEXI_RBP<-data.frame(table(RBP_4cell_plasma$RBP[RBP_4cell_plasma$ID%in%FLEXI_list]))
+  RBP_plot<-merge(RBP_fre,FLEXI_RBP,by=1,all=T)
+  RBP_plot[is.na(RBP_plot)]<-0
+  RBP_plot$Padj<-1
+  RBP_plot$Type<-"N"
+  R_sum<-colSums(RBP_plot[,3:4])
+  for (j in 1:dim(RBP_plot)[1]){
+    RBP_plot[j,5]<-fisher.test(as.matrix(rbind(RBP_plot[j,3:4],R_sum)))$p.value
+  }
+  RBP_plot[,3:4]<-data.frame(prop.table(as.matrix(RBP_plot[,3:4]),margin = 2)*100)
+  RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="fdr")
+  RBP_plot[RBP_plot$Padj<=pvalue_cutoff & RBP_plot$Cells>RBP_plot$Freq & RBP_plot$Cells>=percent_cutoff,6]<-"D"
+  RBP_plot[RBP_plot$Padj<=pvalue_cutoff & RBP_plot$Cells<RBP_plot$Freq & RBP_plot$Freq>=percent_cutoff,6]<-"U"
+  #RBP_plot$Padj<-p.adjust(RBP_plot$Padj,method="bonferroni")
+  axis_max<-floor(max(RBP_plot[,3:4])/5)*5+5
+  plot(RBP_plot[,c(3,4)],xlim=c(0,axis_max),ylim=c(0,axis_max),cex=1.5,axes=F,
+       main=paste0(RBP_list[i]," FLEXIs"),
+       bty="n",col=col[RBP_plot$col],ylab=NA,xlab=NA)
+  axis(1,at=seq(0,axis_max,5),label=F)
+  axis(2,at=seq(0,axis_max,5),label=F)
+  #sig_cutoff<-(RBP_plot$Padj<=0.05 & (RBP_plot[,3]>=3 | RBP_plot[,4]>=3))
+  sig_cutoff<-(RBP_plot$Padj<=pvalue_cutoff & (RBP_plot[,3]>=percent_cutoff | RBP_plot[,4]>=percent_cutoff))
+  abline(0,1,col="red")
+  if(sum(sig_cutoff)>0){
+    text(RBP_plot[sig_cutoff,3:4],cex=0.5,pos = 4,
+         col=col[RBP_plot$col[sig_cutoff]],
+         labels = RBP_plot$RBP.name[sig_cutoff])
+  }
+  Len_t<-0
+  GC_t<-0
+  MFE_t<-0
+  #  PhastCon30_t<-0
+  rep_times<-1000
+  for (inter in 1:rep_times){
+    sample_size<-dim(FLEXI_dat)[1]
+    test_set<-FourCell[sample(1:dim(FourCell)[1],sample_size,replace = F),]
+    if (wilcox.test(FLEXI_dat$Len,test_set$Len,exact = F)$p.value>0.05) {Len_t=Len_t+1}
+    if (wilcox.test(FLEXI_dat$GC,test_set$GC,exact = F)$p.value>0.05) {GC_t=GC_t+1}
+    if (wilcox.test(FLEXI_dat$MFE,test_set$MFE,exact = F)$p.value>0.05) {MFE_t=MFE_t+1}
+    #    if (wilcox.test(FLEXI_dat$PhastCon30,test_set$PhastCon30,exact = F)$p.value>0.05) {PhastCon30_t=PhastCon30_t+1}
+  }
+  len_max=0.02
+  GC_max=0.08
+  MFE_max=0.03
+  
+  #Length
+  plot(density(FLEXI_dat$Len),bty="n",xlim=c(0,350),lwd=1.5,xlab=NA,ylab=NA,
+       ylim=c(0,len_max),main=NA,axes=F,col="red")
+  lines(density(temp2$Len),xlim=c(0,350),lwd=1.5,col="black")
+  legend(120,0.018,lty=c(1,1),lwd=1.5,col=c("red","black"),
+         legend = c(paste0(RBP_list[i]," (",dim(FLEXI_dat)[1],")"),"Others"),bty="n")
+  axis(1,at=seq(0,350,50),labels = F)
+  axis(2,at=seq(0,len_max,0.01),labels = F)
+  pvalue<-wilcox.test(FLEXI_dat$Len,temp2$Len,exact = F)$p.value
+  if ((Len_t/rep_times<=0.05) & (pvalue<=0.05)) {
+    if (pvalue<0.01) {
+      legend("topleft",legend=paste0("p<0.01"),bty="n")
+    } else {
+      legend("topleft",legend=paste0("p = ",format(pvalue,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+  } 
+  #GC
+  plot(density(FLEXI_dat$GC),bty="n",xlim=c(0,100),lwd=1.5,
+       ylim=c(0,GC_max),main=NA,xlab=NA,ylab=NA,axes=F,col="red")
+  lines(density(temp2$GC),xlim=c(0,100),lwd=1.5,col="black")
+  axis(1,at=seq(0,100,25),labels = F)
+  axis(2,at=seq(0,GC_max,0.02),labels = F)
+  pvalue<-wilcox.test(FLEXI_dat$GC,temp2$GC,exact = F)$p.value
+  if ((GC_t/rep_times<=0.05) & (pvalue<=0.05)) {
+    if (pvalue<0.01) {
+      legend("topleft",legend=paste0("p<0.01"),bty="n")
+    } else {
+      legend("topleft",legend=paste0("p = ",format(pvalue,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+  } 
+  #MEF
+  plot(density(FLEXI_dat$MFE),bty="n",xlim=c(-150,0),lwd=1.5,
+       ylim=c(0,MFE_max),main=NA,xlab=NA,ylab=NA,axes=F,col="red")
+  lines(density(temp2$MFE),xlim=c(-150,0),lwd=1.5,col="black")
+  axis(1,at=seq(-150,0,50),labels = F)
+  axis(2,at=seq(0,MFE_max,0.01),labels = F)
+  pvalue<-wilcox.test(FLEXI_dat$MFE,temp2$MFE,exact = F)$p.value
+  if ((MFE_t/rep_times<=0.05) & (pvalue<=0.05)) {
+    if (pvalue<0.01) {
+      legend("topleft",legend=paste0("p<0.01"),bty="n")
+    } else {
+      legend("topleft",legend=paste0("p = ",format(pvalue,digits=2,nsmall=2,big.mark = ".")),bty="n") 
+    }
+  } 
+  
+}
+dev.off()
 
 #FigS18
 #FigS18A-D, upset plot of oncogene TSG in BC dataset
+dat<-read.delim("all.FLEXI")
 BC_FLEXI<-dat[,c(1:25,93,82:92)]
 Onco<-read.delim("OncoGenes.table")
 Onco$Onco<-1
@@ -1510,57 +1638,134 @@ BC_FLEXI[,27:38]<-log2(temp)
 BC_FLEXI<-merge(BC_FLEXI,Onco,by="GName",all.x=T)
 BC_FLEXI<-merge(BC_FLEXI,TSG,by="GName",all.x=T)
 BC_FLEXI[is.na(BC_FLEXI)]<-0
-pdf("Figures/Fig8A_D.pdf",height=8,width=11)
+#FigS18A Oncogene FLEXIs (up)
+pdf("Figures/FigS18A.pdf",height=4,width=8)
 set1<-BC_FLEXI[((BC_FLEXI$BC3-BC_FLEXI$BCH3)>=1) & BC_FLEXI$Onco==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BC4-BC_FLEXI$BCH4>=1) & BC_FLEXI$Onco==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$MDA-BC_FLEXI$Healthy>=1) & BC_FLEXI$Onco==1,2]
 set4<-BC_FLEXI[(BC_FLEXI$MCF7-BC_FLEXI$Healthy>=1) & BC_FLEXI$Onco==1,2]
 set <- list ("Patient A"=set1,"Patient B"=set2,
              "MDA-MB-231"=set3,"MCF7"=set4)
-up1 <- upset(fromList(set),number.angles = 45,mainbar.y.label = "Oncogene FLEXIs",
-             sets.x.label = "Oncogene FLEXIs (Up)",keep.order = T,sets=rev(names(set)),
-             main.bar.color = c(rep("tomato",4),rep("royalblue1",6),rep("goldenrod",3),"orchid"))
-up1 <- cowplot::plot_grid(NULL, up1$Main_bar, up1$Sizes, up1$Matrix,
-                          nrow=2, align='hv', rel_heights = c(3,1),
-                          rel_widths = c(2,3))
+m = make_comb_mat(set)
+ss<-set_size(m)
+cs=comb_size(m)
+od<-c(12,14,13,11,5,8,9,6,10,7,4,2,3,1)
+UpSet(m,set_order=c("Patient A","Patient B","MDA-MB-231","MCF7"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)],
+      column_title="FLEXI RNAs",
+      comb_order=od,
+      top_annotation = HeatmapAnnotation(
+        "Counts" = anno_barplot(cs, 
+                                ylim = c(0, max(cs)*1.1),
+                                border = F,
+                                gp = gpar(border =NA,lty=0,
+                                          fill =c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)]), 
+                                height = unit(5, "cm")), 
+        annotation_name_side = "left", 
+        annotation_name_rot = 90),
+      right_annotation = rowAnnotation("Size"=anno_text(formatC(ss,big.mark = ","))))
+decorate_annotation("Counts", {grid.text(cs[od], x = 1:14, y = unit(cs[od], "native") + unit(2, "pt"), 
+                                         default.units = "native", just = c("left", "bottom"), 
+                                         gp = gpar(fontsize = 8,
+                                                   col=c(rep("tomato",4),rep("royalblue1",6),rep("goldenrod",3),"orchid")),
+                                         rot = 45)})
+dev.off()
+#FigS18B Oncogene FLEXIs (down)
+pdf("Figures/FigS18B.pdf",height=4,width=8)
 set1<-BC_FLEXI[(BC_FLEXI$BCH3-BC_FLEXI$BC3>=1) & BC_FLEXI$Onco==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BCH4-BC_FLEXI$BC4>=1) & BC_FLEXI$Onco==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$Healthy-BC_FLEXI$MDA>=1) & BC_FLEXI$Onco==1,2]
 set4<-BC_FLEXI[(BC_FLEXI$Healthy-BC_FLEXI$MCF7>=1) & BC_FLEXI$Onco==1,2]
 set <- list ("Patient A"=set1,"Patient B"=set2,
              "MDA-MB-231"=set3,"MCF7"=set4)
-up2 <- upset(fromList(set),number.angles = 45,mainbar.y.label = "Oncogene FLEXIs",
-             sets.x.label = "Oncogene FLEXIs (Down)",keep.order = T,sets=rev(names(set)),
-             main.bar.color = c(rep("tomato",4),rep("royalblue1",4),rep("goldenrod",3),"orchid"))
-up2 <- cowplot::plot_grid(NULL, up2$Main_bar, up2$Sizes, up2$Matrix,
-                          nrow=2, align='hv', rel_heights = c(3,1),
-                          rel_widths = c(2,3))
+m = make_comb_mat(set)
+ss<-set_size(m)
+cs=comb_size(m)
+od<-c(9,12,11,10,6,8,5,7,3,4,2,1)
+UpSet(m,set_order=c("Patient A","Patient B","MDA-MB-231","MCF7"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)],
+      column_title="FLEXI RNAs",
+      comb_order=od,
+      top_annotation = HeatmapAnnotation(
+        "Counts" = anno_barplot(cs, 
+                                ylim = c(0, max(cs)*1.1),
+                                border = F,
+                                gp = gpar(border =NA,lty=0,
+                                          fill =c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)]), 
+                                height = unit(5, "cm")), 
+        annotation_name_side = "left", 
+        annotation_name_rot = 90),
+      right_annotation = rowAnnotation("Size"=anno_text(formatC(ss,big.mark = ","))))
+decorate_annotation("Counts", {grid.text(cs[od], x = 1:12, y = unit(cs[od], "native") + unit(2, "pt"), 
+                                         default.units = "native", just = c("left", "bottom"), 
+                                         gp = gpar(fontsize = 8,
+                                                   col=c(rep("tomato",4),rep("royalblue1",4),rep("goldenrod",3),"orchid")),
+                                         rot = 45)})
+dev.off()
+#FigS18C TSG FLEXIs (up)
+pdf("Figures/FigS18C.pdf",height=4,width=8)
 set1<-BC_FLEXI[(BC_FLEXI$BC3-BC_FLEXI$BCH3>=1) & BC_FLEXI$TSG==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BC4-BC_FLEXI$BCH4>=1) & BC_FLEXI$TSG==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$MDA-BC_FLEXI$Healthy>=1) & BC_FLEXI$TSG==1,2]
 set4<-BC_FLEXI[(BC_FLEXI$MCF7-BC_FLEXI$Healthy>=1) & BC_FLEXI$TSG==1,2]
 set <- list ("Patient A"=set1,"Patient B"=set2,
              "MDA-MB-231"=set3,"MCF7"=set4)
-up3 <-upset(fromList(set),number.angles = 45,mainbar.y.label = "TSG FLEXIs",
-            sets.x.label = "TSG FLEXIs (Up)",keep.order = T,sets=rev(names(set)),
-            main.bar.color = c(rep("tomato",4),rep("royalblue1",6),rep("goldenrod",3),"orchid"))
-up3 <- cowplot::plot_grid(NULL, up3$Main_bar, up3$Sizes, up3$Matrix,
-                          nrow=2, align='hv', rel_heights = c(3,1),
-                          rel_widths = c(2,3))
+m = make_comb_mat(set)
+ss<-set_size(m)
+cs=comb_size(m)
+od<-c(12,14,13,11,8,9,5,10,6,7,2,4,3,1)
+UpSet(m,set_order=c("Patient A","Patient B","MDA-MB-231","MCF7"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)],
+      column_title="FLEXI RNAs",
+      comb_order=od,
+      top_annotation = HeatmapAnnotation(
+        "Counts" = anno_barplot(cs, 
+                                ylim = c(0, max(cs)*1.1),
+                                border = F,
+                                gp = gpar(border =NA,lty=0,
+                                          fill =c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)]), 
+                                height = unit(5, "cm")), 
+        annotation_name_side = "left", 
+        annotation_name_rot = 90),
+      right_annotation = rowAnnotation("Size"=anno_text(formatC(ss,big.mark = ","))))
+decorate_annotation("Counts", {grid.text(cs[od], x = 1:14, y = unit(cs[od], "native") + unit(2, "pt"), 
+                                         default.units = "native", just = c("left", "bottom"), 
+                                         gp = gpar(fontsize = 8,
+                                                   col=c(rep("tomato",4),rep("royalblue1",6),rep("goldenrod",3),"orchid")),
+                                         rot = 45)})
+dev.off()
+#FigS18C TSG FLEXIs (down)
+pdf("Figures/FigS18D.pdf",height=4,width=8)
 set1<-BC_FLEXI[(BC_FLEXI$BCH3-BC_FLEXI$BC3>=1) & BC_FLEXI$TSG==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BCH4-BC_FLEXI$BC4>=1) & BC_FLEXI$TSG==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$Healthy-BC_FLEXI$MDA>=1) & BC_FLEXI$TSG==1,2]
 set4<-BC_FLEXI[(BC_FLEXI$Healthy-BC_FLEXI$MCF7>=1) & BC_FLEXI$TSG==1,2]
 set <- list ("Patient A"=set1,"Patient B"=set2,
              "MDA-MB-231"=set3,"MCF7"=set4)
-up4 <- upset(fromList(set),number.angles = 45,mainbar.y.label = "TSG FLEXIs",
-             sets.x.label = "TSG FLEXIs (Down)",keep.order = T,sets=rev(names(set)),
-             main.bar.color = c(rep("tomato",3),rep("royalblue1",5),rep("goldenrod",3),"orchid"))
-up4 <- cowplot::plot_grid(NULL, up4$Main_bar, up4$Sizes, up4$Matrix,
-                          nrow=2, align='hv', rel_heights = c(3,1),
-                          rel_widths = c(2,3))
-grid.arrange(up1, up2, up3,up4,nrow = 2,ncol=2)
+m = make_comb_mat(set)
+ss<-set_size(m)
+cs=comb_size(m)
+od<-c(10,12,11,9,6,5,7,8,4,3,2,1)
+UpSet(m,set_order=c("Patient A","Patient B","MDA-MB-231","MCF7"),
+      comb_col = c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)],
+      column_title="FLEXI RNAs",
+      comb_order=od,
+      top_annotation = HeatmapAnnotation(
+        "Counts" = anno_barplot(cs, 
+                                ylim = c(0, max(cs)*1.1),
+                                border = F,
+                                gp = gpar(border =NA,lty=0,
+                                          fill =c("tomato","royalblue1","goldenrod","orchid")[comb_degree(m)]), 
+                                height = unit(5, "cm")), 
+        annotation_name_side = "left", 
+        annotation_name_rot = 90),
+      right_annotation = rowAnnotation("Size"=anno_text(formatC(ss,big.mark = ","))))
+decorate_annotation("Counts", {grid.text(cs[od], x = 1:12, y = unit(cs[od], "native") + unit(2, "pt"), 
+                                         default.units = "native", just = c("left", "bottom"), 
+                                         gp = gpar(fontsize = 8,
+                                                   col=c(rep("tomato",3),rep("royalblue1",5),rep("goldenrod",3),"orchid")),
+                                         rot = 45)})
 dev.off()
-rm(list=c("temp","dat1","up1","up2","up3","up4","set1","set2","set3","set4","set"))
+rm(list=c("temp","set1","set2","set3","set4","set","cs","ss","od"))
 
 

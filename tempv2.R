@@ -3360,7 +3360,7 @@ for (i in 1:47) {
 dev.off()
 
 # plot 6 core splicesome
-RBP_list<-c("AQR","BUD13","EFTUD2","PPIG","PRPF8","SF3")
+RBP_list<-c("AQR","BUD13","EFTUD2","PPIG","PRPF8","SF3B4")
 pdf("temp_fig/Fig5_sup2.pdf",width=8,height=20,onefile = T)
 par(mfrow=c(10,4),pch=16,pty="s",mar=c(2,2,2,2))
 for (i in 1:6) {
