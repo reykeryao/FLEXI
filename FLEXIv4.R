@@ -481,7 +481,7 @@ rm(list=c("temp","cor_p","GID_list","sig.x","sig.y","Unfrag_total","Cell_counts"
 
 #Fig4A bar plot and FigS9
 RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
-FLEXI<-dat[rowMaxs(as.matrix(dat[,88:91]))>0,]
+FLEXI<-dat[rowSums(dat[,88:91])>0,]
 RBP_4cell_plasma<-RBP_4cell_plasma[RBP_4cell_plasma$ID%in%FLEXI$ID,]
 RBP_4cell_plasma<-unique(RBP_4cell_plasma)
 RBP_fre<-data.frame(table(RBP_4cell_plasma$RBP))
@@ -858,9 +858,11 @@ set_5 <- unique(FLEXI_CPM$GID[FLEXI_CPM$MCF7>=cut_off])
 set <- list ("Healthy A+B"=set_1,
              "Cancer A"=set_2,"Cancer B"=set_3,
              "MDA-MB-231"=set_4,"MCF7"=set_5)
+
 m = make_comb_mat(set)
 ss<-set_size(m)
 od<-c(6,15,16,13,14,26:21,31:30,29:28,1,5:2,12:7,20:17,27)
+
 cs=comb_size(m)
 UpSet(m,set_order=c("MDA-MB-231","MCF7","Cancer A",
                     "Cancer B","Healthy A+B"),
@@ -884,7 +886,7 @@ decorate_annotation("Counts", {grid.text(cs[od][c(1:5,12:16,31)], x = c(1:5,12:1
 dev.off()
 rm(set_1,set_2,set_3,set_4,set_5,ss,cs,od,cut_off,m,set,FLEXI_CPM)
 
-#Fig 7B scatter plot
+#Fig 8B scatter plot
 Repo<-dat[,c(1,32:34,29:31,26:28,35:37,38:47)]
 Repo<-Repo[rowSums(Repo[,2:23])>0,]
 Repo$BCH3_repro<-apply(Repo[,2:4],1,FUN=function(x){sum(x>0)})
@@ -1414,7 +1416,7 @@ for (i in 1:2){
 }
 rm(tsne,W,zinb,col,BR_col,i,file_name,name,obj_name,cutoff,P_pch,pdf_name,pca,pca_dat,dat1)
 
-# FigS7
+# FigS7A
 dat_clus$K562_1<-rowSums(dat_clus[,30:37])
 dat_clus$K562_2<-rowSums(dat_clus[,61:67])
 dat_clus$HEK_1<-rowSums(dat_clus[,38:45])
@@ -1441,7 +1443,7 @@ temp<-dat_clus[,1:8]
 temp[temp==0]<-2^-10
 dat_clus[,1:8]<-temp
 dat_clus[,1:8]<-log2(dat_clus[,1:8])
-pdf("Figures/FigS7.pdf",height=8,width=8)
+pdf("Figures/FigS7A.pdf",height=8,width=8)
 par(pty="s",pch=16,mfrow=c(2,2))
 #K562
 temp<-dat_clus[(dat_clus$K562_1>log2(0.01)) & (dat_clus$K562_2>log2(0.01)),]
@@ -1479,6 +1481,124 @@ text(2,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
 dev.off()
 rm(dat_clus,sub_mapped_reads,cor_p,temp,dat)
 dat<-read.delim("all.FLEXI")
+
+#FigS7B, down-sampled scattre plots, as Fig3A
+#down saplingmscatter
+FLEXI_CPM<-dat[,c(1,8,89:91)]
+FLEXI_total<-colSums(FLEXI_CPM[,3:5])
+Unfrag_total<-mapped_reads[8:10]
+FLEXI_CPM[,3:5]<-t(t(FLEXI_CPM[,3:5])/Unfrag_total)
+FLEXI_CPM$K562_repo<-apply(dat[,56:63],1,FUN=function(x){sum(x>0)})
+FLEXI_CPM$HEK_repo<-apply(dat[,64:71],1,FUN=function(x){sum(x>0)})
+FLEXI_CPM$Hela_repo<-apply(dat[,72:81],1,FUN=function(x){sum(x>0)})
+FLEXI_CPM<-FLEXI_CPM[rowSums(FLEXI_CPM[,3:5])>0,]
+temp<-FLEXI_CPM[,3:5]
+temp[temp==0]<-2^-10
+FLEXI_CPM[,3:5]<-temp
+FLEXI_CPM<-FLEXI_CPM[,2:8]
+'''
+Cell_unfrag_counts<-read.delim("combined_run.counts")
+Cell_unfrag_counts$K562<-rowSums(Cell_unfrag_counts[,c(34:41)])
+Cell_unfrag_counts$HEK<-rowSums(Cell_unfrag_counts[,c(42:49)])
+Cell_unfrag_counts$Hela<-rowSums(Cell_unfrag_counts[,c(50:59)])
+rownames(Cell_unfrag_counts)<-Cell_unfrag_counts$ID
+Cell_unfrag_counts$ID<-as.character(Cell_unfrag_counts$ID)
+Unfrag_total<-colSums(Cell_unfrag_counts[,60:62])
+#Subset only FLEXI host genes
+GID_list<-unique(FLEXI_CPM$GID)
+Cell_counts<-Cell_unfrag_counts[Cell_unfrag_counts$ID%in%GID_list,c(1,60:62)]
+FLEXI_host_total<-colSums(Cell_counts[,2:4])
+Sampling_ratio<-FLEXI_host_total/FLEXI_total
+Sampling_size<-Unfrag_total/Sampling_ratio
+#sampling based on ratio of FLEXI counts to FLEXI host gene counts on the whole dataset
+for (i in 1:3){
+  tmp<-rep(Cell_unfrag_counts$ID,Cell_unfrag_counts[,59+i])
+  tmp<-sample(tmp)
+  tmp<-sample(tmp,Sampling_size[i],replace = T)
+  tmp<-data.frame(table(tmp))
+  Cell_unfrag_counts<-merge(Cell_unfrag_counts,tmp,by=1,all=T)
+}
+Cell_unfrag_counts[is.na(Cell_unfrag_counts)]<-0
+GID_list<-unique(FLEXI_CPM$GID)
+Cell_counts<-Cell_unfrag_counts[Cell_unfrag_counts$ID%in%GID_list,c(1,63:65)]
+Cell_counts[,2:4]<-1e6*t(t(Cell_counts[,2:4])/Unfrag_total)
+#Assign log2CPM of -10 for those with 0 count
+Cell_counts[Cell_counts==0]<-2^-10
+colnames(Cell_counts)[2:4]<-colnames(Cell_unfrag_counts)[60:62]
+write.table(Cell_counts,"Fig3A_downsampled.counts",quote=F,sep="\t",row.names=F)
+'''
+Cell_counts<-read.delim("Fig3A_downsampled.counts")
+pdf("Figures/FigS7B.pdf",width = 9,height=6)
+par(pch=16,mfcol=c(2,3),pty="s")
+#FLEXIs scatter
+#FELXIs between K562 and HeLa
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,4)]),xlim=c(-10,5),ylim=c(-10,5),col="gray")
+abline(0,1,col="red")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562_repo>=8,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela_repo>=10,]
+points(log2(sig.y[,c(2,4)]),col="#FF000050")
+points(log2(sig.x[,c(2,4)]),col="#0000FF50")
+#Unfrag scatter
+#FELXIs between K562 and HeLa
+FLEXI_by_GID<-Cell_counts[!(Cell_counts[,2]==2^-10 & Cell_counts[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,4)]),xlim=c(-10,5),ylim=c(-10,5),col="gray")
+abline(0,1,col="red")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
+sig.x<-unique(sig.x$GID)
+sig.y<-unique(sig.y$GID)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(2,4)]),col="#FF000080")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,4)]),col="#0000FF80")
+
+#FLEXIs scatter
+#FELXIs between HEK and HeLa
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,3]==2^-10 & FLEXI_CPM[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(3,4)]),xlim=c(-10,5),ylim=c(-10,5),col="gray")
+abline(0,1,col="red")
+cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$HEK_repo>=8,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela_repo>=10,]
+points(log2(sig.y[,c(3,4)]),col="#FF000080")
+points(log2(sig.x[,c(3,4)]),col="#0000FF80")
+#Unfrag scatter
+#FELXIs between HEK and HeLa
+FLEXI_by_GID<-Cell_counts[!(Cell_counts[,3]==2^-10 & Cell_counts[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(3,4)]),xlim=c(-10,5),ylim=c(-10,5),col="gray")
+abline(0,1,col="red")
+cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
+sig.x<-unique(sig.x$GID)
+sig.y<-unique(sig.y$GID)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(3,4)]),col="#FF000080")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(3,4)]),col="#0000FF80")
+
+#FELXIs between K562 and HEK
+FLEXI_by_GID<-FLEXI_CPM[!(FLEXI_CPM[,2]==2^-10 & FLEXI_CPM[,3]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,3)]),xlim=c(-10,5),ylim=c(-10,5),col="gray")
+abline(0,1,col="red")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
+sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562_repo>=8,]
+sig.y<-FLEXI_by_GID[FLEXI_by_GID$HEK_repo>=8,]
+points(log2(sig.y[,c(2,3)]),col="#FF000080")
+points(log2(sig.x[,c(2,3)]),col="#0000FF80")
+
+#Unfrag scatter
+#FELXIs between K562 and HEK
+FLEXI_by_GID<-Cell_counts[!(Cell_counts[,2]==2^-10 & Cell_counts[,3]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,3)]),xlim=c(-10,5),ylim=c(-10,5),col="gray")
+abline(0,1,col="red")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,3],method = "pearson"),digits=2, format="f")
+text(1,-7,bquote(atop(italic(r)== .(cor_p)~phantom())))
+sig.x<-unique(sig.x$GID)
+sig.y<-unique(sig.y$GID)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.y,c(2,3)]),col="#FF000080")
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%sig.x,c(2,3)]),col="#0000FF80")
+dev.off()
 
 #FigS10 made by Shelby
 
@@ -1619,7 +1739,7 @@ for (i in 1:53) {
 dev.off()
 
 #FigS18
-#FigS18A-D, upset plot of oncogene TSG in BC dataset
+#FigS18B-E, upset plot of oncogene TSG in BC dataset
 dat<-read.delim("all.FLEXI")
 BC_FLEXI<-dat[,c(1:25,93,82:92)]
 Onco<-read.delim("OncoGenes.table")
@@ -1638,8 +1758,8 @@ BC_FLEXI[,27:38]<-log2(temp)
 BC_FLEXI<-merge(BC_FLEXI,Onco,by="GName",all.x=T)
 BC_FLEXI<-merge(BC_FLEXI,TSG,by="GName",all.x=T)
 BC_FLEXI[is.na(BC_FLEXI)]<-0
-#FigS18A Oncogene FLEXIs (up)
-pdf("Figures/FigS18A.pdf",height=4,width=8)
+#FigS18B Oncogene FLEXIs (up)
+pdf("Figures/FigS18B.pdf",height=4,width=8)
 set1<-BC_FLEXI[((BC_FLEXI$BC3-BC_FLEXI$BCH3)>=1) & BC_FLEXI$Onco==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BC4-BC_FLEXI$BCH4>=1) & BC_FLEXI$Onco==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$MDA-BC_FLEXI$Healthy>=1) & BC_FLEXI$Onco==1,2]
@@ -1670,8 +1790,8 @@ decorate_annotation("Counts", {grid.text(cs[od], x = 1:14, y = unit(cs[od], "nat
                                                    col=c(rep("tomato",4),rep("royalblue1",6),rep("goldenrod",3),"orchid")),
                                          rot = 45)})
 dev.off()
-#FigS18B Oncogene FLEXIs (down)
-pdf("Figures/FigS18B.pdf",height=4,width=8)
+#FigS18C Oncogene FLEXIs (down)
+pdf("Figures/FigS18C.pdf",height=4,width=8)
 set1<-BC_FLEXI[(BC_FLEXI$BCH3-BC_FLEXI$BC3>=1) & BC_FLEXI$Onco==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BCH4-BC_FLEXI$BC4>=1) & BC_FLEXI$Onco==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$Healthy-BC_FLEXI$MDA>=1) & BC_FLEXI$Onco==1,2]
@@ -1702,8 +1822,8 @@ decorate_annotation("Counts", {grid.text(cs[od], x = 1:12, y = unit(cs[od], "nat
                                                    col=c(rep("tomato",4),rep("royalblue1",4),rep("goldenrod",3),"orchid")),
                                          rot = 45)})
 dev.off()
-#FigS18C TSG FLEXIs (up)
-pdf("Figures/FigS18C.pdf",height=4,width=8)
+#FigS18D TSG FLEXIs (up)
+pdf("Figures/FigS18D.pdf",height=4,width=8)
 set1<-BC_FLEXI[(BC_FLEXI$BC3-BC_FLEXI$BCH3>=1) & BC_FLEXI$TSG==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BC4-BC_FLEXI$BCH4>=1) & BC_FLEXI$TSG==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$MDA-BC_FLEXI$Healthy>=1) & BC_FLEXI$TSG==1,2]
@@ -1734,8 +1854,8 @@ decorate_annotation("Counts", {grid.text(cs[od], x = 1:14, y = unit(cs[od], "nat
                                                    col=c(rep("tomato",4),rep("royalblue1",6),rep("goldenrod",3),"orchid")),
                                          rot = 45)})
 dev.off()
-#FigS18C TSG FLEXIs (down)
-pdf("Figures/FigS18D.pdf",height=4,width=8)
+#FigS18E TSG FLEXIs (down)
+pdf("Figures/FigS18E.pdf",height=4,width=8)
 set1<-BC_FLEXI[(BC_FLEXI$BCH3-BC_FLEXI$BC3>=1) & BC_FLEXI$TSG==1,2]
 set2<-BC_FLEXI[(BC_FLEXI$BCH4-BC_FLEXI$BC4>=1) & BC_FLEXI$TSG==1,2]
 set3<-BC_FLEXI[(BC_FLEXI$Healthy-BC_FLEXI$MDA>=1) & BC_FLEXI$TSG==1,2]
@@ -1768,4 +1888,111 @@ decorate_annotation("Counts", {grid.text(cs[od], x = 1:12, y = unit(cs[od], "nat
 dev.off()
 rm(list=c("temp","set1","set2","set3","set4","set","cs","ss","od"))
 
-
+#FigS18A downsampled scatter as Fig8B
+#new Fig8B alt
+#Fig 8B scatter plot
+Repo<-dat[,c(1,32:34,29:31,26:28,35:37,38:47)]
+Repo<-Repo[rowSums(Repo[,2:23])>0,]
+Repo$BCH3_repro<-apply(Repo[,2:4],1,FUN=function(x){sum(x>0)})
+Repo$BCH4_repro<-apply(Repo[,5:7],1,FUN=function(x){sum(x>0)})
+Repo$BC3_repro<-apply(Repo[,8:10],1,FUN=function(x){sum(x>0)})
+Repo$BC4_repro<-apply(Repo[,11:13],1,FUN=function(x){sum(x>0)})
+Repo$MDA_repro<-apply(Repo[,14:15],1,FUN=function(x){sum(x>0)})
+Repo$MCF_repro<-apply(Repo[,16:23],1,FUN=function(x){sum(x>0)})
+Repo$PatientA_H<-rowSums(Repo[,c(2:4)])
+Repo$PatientB_H<-rowSums(Repo[,c(5:7)])
+Repo$PatientA_C<-rowSums(Repo[,c(8:10)])
+Repo$PatientB_C<-rowSums(Repo[,c(11:13)])
+Repo$MDA<-rowSums(Repo[,c(14:15)])
+Repo$MCF<-rowSums(Repo[,c(16:23)])
+Unfrag_total<-mapped_reads[1:6]
+Repo_total<-colSums(Repo[,30:33])
+Repo[,30:35]<-t(t(Repo[,30:35])/Unfrag_total)
+Repo<-Repo[,c(1,24:35)]
+dat1<-Repo[,8:13]
+dat1[dat1==0]<-2^-10
+Repo[,8:13]<-dat1
+rm(dat1)
+Repo$Combined_H<-rowMeans(Repo[,8:9])
+Repo$Combined_H_repo<-Repo$BCH3_repro + Repo$BCH4_repro
+Repo<-Repo[,c(1,15,2:7,14,8:13)]
+Repo$ID<-as.character(Repo$ID)
+Repo<-separate(Repo,ID,into=c("IID","GID"),sep = "___",remove = F,extra="drop")
+Repo<-separate(Repo,IID,into=c("Intron","GName"),sep = "_",remove = T,extra="drop")
+colnames(Repo)[6:9]<-c("PatientA_H_repro","PatientB_H_repro","PatientA_C_repro","PatientB_C_repro")
+'''
+#Calculate CPM of fragmented patientA/B cellular RNA
+Frag_by_FLEXI<-read.delim("IBC_frag.counts")
+Frag_by_FLEXI$ID<-as.character(Frag_by_FLEXI$ID)
+Frag_total<-c(50.48402,33.084889,56.983289,54.093371)
+#Subset only FLEXI host genes
+GID_list<-unique(Repo$GID)
+FLEXI_host_total<-colSums(Frag_by_FLEXI[Frag_by_FLEXI$ID%in%GID_list,c(4:7)])
+Frag_ratio<-colSums(Frag_by_FLEXI[,4:7])/FLEXI_host_total
+DownSampling<-ceiling(Frag_ratio*Repo_total)
+#down sampling
+for (i in 1:4){
+  tmp<-rep(Frag_by_FLEXI$ID,Frag_by_FLEXI[,3+i])
+  tmp<-sample(tmp)
+  tmp<-sample(tmp,DownSampling[i],replace = T)
+  tmp<-data.frame(table(tmp))
+  Frag_by_FLEXI<-merge(Frag_by_FLEXI,tmp,by=1,all=T)
+}
+Frag_by_FLEXI[is.na(Frag_by_FLEXI)]<-0
+Frag_by_FLEXI<-Frag_by_FLEXI[Frag_by_FLEXI$ID%in%GID_list,c(1,8:11)]
+Frag_by_FLEXI[,2:5]<-t(t(Frag_by_FLEXI[,2:5])/Frag_total)
+#Assign log2CPM of -10 for those with 0 count
+Frag_by_FLEXI[Frag_by_FLEXI==0]<-2^-10
+colnames(Frag_by_FLEXI)<-c("ID","PatientA_Healthy","PatientB_Healthy",
+                           "PatientA_Cancer","PatientB_Cancer")
+write.table(Frag_by_FLEXI,"Fig8B_downsampled.counts",quote=F,sep="\t",row.names=F)
+'''
+Frag_by_FLEXI<-read.delim("Fig8B_downsampled.counts")
+pdf("Figures/FigS18A.pdf",width = 10,height=10)
+par(pch=16,mfrow=c(2,2),pty="s")
+#patientA FLEXI scatter
+FLEXI_by_GID<-Repo[!(Repo[,13]==2^-10 & Repo[,15]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(13,15)]),xlim=c(-10,5),ylim=c(-10,5))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,13],FLEXI_by_GID[,15],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,13],FLEXI_by_GID[,15],method = "pearson"),digits=2, format="f")
+text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+#cancer ≥ 0.05 RPM and reproducible FLEXIs (detected in ≥ 50% dataset)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$PatientA_H==2^-10 & FLEXI_by_GID$PatientA_C>2^-10  & 
+                           FLEXI_by_GID$PatientA_C_repro>=3,c(13,15)]),col="red")
+GID_list<-unique(FLEXI_by_GID$GID[FLEXI_by_GID$PatientA_H==2^-10 & 
+                                    FLEXI_by_GID$PatientA_C>=0.01 & 
+                                    FLEXI_by_GID$PatientA_C_repro>=3])
+print(unique(FLEXI_by_GID$ID[FLEXI_by_GID$PatientA_H==2^-10 & 
+                               FLEXI_by_GID$PatientA_C>2^-10  & 
+                               FLEXI_by_GID$PatientA_C_repro>=3]))
+#patientA fragmented cellular RNA scatter plot
+FLEXI_by_GID<-Frag_by_FLEXI[!(Frag_by_FLEXI[,2]==2^-10 & Frag_by_FLEXI[,4]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(2,4)]),xlim=c(-10,5),ylim=c(-10,5))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,2],FLEXI_by_GID[,4],method = "pearson"),digits=2, format="f")
+text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%GID_list,c(2,4)]),col="red")
+#patientB FELXI scatter
+FLEXI_by_GID<-Repo[!(Repo[,14]==2^-10 & Repo[,16]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(14,16)]),xlim=c(-10,5),ylim=c(-10,5))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,14],FLEXI_by_GID[,16],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,15],FLEXI_by_GID[,16],method = "pearson"),digits=2, format="f")
+text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+#cancer ≥ 0.05 RPM and reproducible FLEXIs (detected in ≥ 50% dataset)
+points(log2(FLEXI_by_GID[FLEXI_by_GID$PatientB_H==2^-10 & FLEXI_by_GID$PatientB_C>2^-10  & 
+                           FLEXI_by_GID$PatientB_C_repro>=3,c(14,16)]),col="red")
+GID_list<-unique(FLEXI_by_GID$GID[FLEXI_by_GID$PatientB_H==2^-10 & 
+                                    FLEXI_by_GID$PatientB_C>=0.01  &
+                                    FLEXI_by_GID$PatientB_C_repro>=3])
+#patientB fragmented cellular RNA scatter plot
+FLEXI_by_GID<-Frag_by_FLEXI[!(Frag_by_FLEXI[,3]==2^-10 & Frag_by_FLEXI[,5]==2^-10),]
+plot(log2(FLEXI_by_GID[,c(3,5)]),xlim=c(-10,5),ylim=c(-10,5))
+abline(0,1,col="red")
+cor_s=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,5],method = "spearman"),digits=2, format="f")
+cor_p=formatC(cor(FLEXI_by_GID[,3],FLEXI_by_GID[,5],method = "pearson"),digits=2, format="f")
+text(-8,4,bquote(atop(italic(r)== .(cor_p)~phantom(),italic(r[s])== .(cor_s))))
+points(log2(FLEXI_by_GID[FLEXI_by_GID$ID%in%GID_list,c(3,5)]),col="red")
+dev.off()
