@@ -1,0 +1,162 @@
+<svg class='notselectable nwlinkhovertoggle' height='310' id='svg_network_image' width='975' style='vertical-align:top;' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+<style type='text/css'><![CDATA[
+.nwbubblecoloredcircle { opacity: 0.4; }
+.nwbubbletransparentdcircle { opacity: 0.1; }
+.nwnodecontainer:hover { cursor: pointer; }
+.nwnodecontainer:hover .nwbubblecoloredcircle { opacity: 0.2; }
+.nwnodecontainerselected .nwbubblecoloredcircle { fill: rgb(255,0,0) !important; }
+.nwnodecontainerwhiteout .nwbubblecoloredcircle { fill: rgb(255,255,255) !important; }
+text { font-family: Arial; font-size: 12px; }
+.nwlinkhovertoggle .nwlinkwrapper:hover { cursor: pointer; }
+]]></style>
+<g id='edges'>
+<g class='nwlinkwrapper' id='edge.6212215.6217933'>
+<line class='nw_edge' id='line.6212215.6217933.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='526' x2='402'  y1='83' y2='50' />
+<line class='nw_edge' id='line.6212215.6217933.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.226' stroke-width='1.356' x1='526.5' x2='402.5' y1='83.5' y2='50.5' /></g>
+<g class='nwlinkwrapper' id='edge.6212215.6214689'>
+<line class='nw_edge' id='line.6212215.6214689.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='526' x2='346'  y1='83' y2='140' />
+<line class='nw_edge' id='line.6212215.6214689.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.2753333333333333' stroke-width='1.652' x1='526.5' x2='346.5' y1='83.5' y2='140.5' /></g>
+<g class='nwlinkwrapper' id='edge.6212215.6230269'>
+<line class='nw_edge' id='line.6212215.6230269.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='526' x2='445'  y1='83' y2='166' />
+<line class='nw_edge' id='line.6212215.6230269.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.28' stroke-width='1.68' x1='526.5' x2='445.5' y1='83.5' y2='166.5' /></g>
+<g class='nwlinkwrapper' id='edge.6212215.6226535'>
+<line class='nw_edge' id='line.6212215.6226535.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='526' x2='588'  y1='83' y2='188' />
+<line class='nw_edge' id='line.6212215.6226535.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.3426666666666667' stroke-width='2.056' x1='526.5' x2='588.5' y1='83.5' y2='188.5' /></g>
+<g class='nwlinkwrapper' id='edge.6212215.6221997'>
+<line class='nw_edge' id='line.6212215.6221997.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='526' x2='486'  y1='83' y2='246' />
+<line class='nw_edge' id='line.6212215.6221997.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.382' stroke-width='2.292' x1='526.5' x2='486.5' y1='83.5' y2='246.5' /></g>
+<g class='nwlinkwrapper' id='edge.6214689.6221997'>
+<line class='nw_edge' id='line.6214689.6221997.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='346' x2='486'  y1='140' y2='246' />
+<line class='nw_edge' id='line.6214689.6221997.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.2793333333333333' stroke-width='1.676' x1='346.5' x2='486.5' y1='140.5' y2='246.5' /></g>
+<g class='nwlinkwrapper' id='edge.6214689.6218051'>
+<line class='nw_edge' id='line.6214689.6218051.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='346' x2='364'  y1='140' y2='265' />
+<line class='nw_edge' id='line.6214689.6218051.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.4126666666666667' stroke-width='2.476' x1='346.5' x2='364.5' y1='140.5' y2='265.5' /></g>
+<g class='nwlinkwrapper' id='edge.6214689.6230269'>
+<line class='nw_edge' id='line.6214689.6230269.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='346' x2='445'  y1='140' y2='166' />
+<line class='nw_edge' id='line.6214689.6230269.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.456' stroke-width='2.736' x1='346.5' x2='445.5' y1='140.5' y2='166.5' /></g>
+<g class='nwlinkwrapper' id='edge.6214689.6217933'>
+<line class='nw_edge' id='line.6214689.6217933.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='346' x2='402'  y1='140' y2='50' />
+<line class='nw_edge' id='line.6214689.6217933.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.5706666666666667' stroke-width='3.424' x1='346.5' x2='402.5' y1='140.5' y2='50.5' /></g>
+<g class='nwlinkwrapper' id='edge.6217933.6221997'>
+<line class='nw_edge' id='line.6217933.6221997.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='402' x2='486'  y1='50' y2='246' />
+<line class='nw_edge' id='line.6217933.6221997.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.21533333333333332' stroke-width='1.292' x1='402.5' x2='486.5' y1='50.5' y2='246.5' /></g>
+<g class='nwlinkwrapper' id='edge.6218051.6230269'>
+<line class='nw_edge' id='line.6218051.6230269.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='364' x2='445'  y1='265' y2='166' />
+<line class='nw_edge' id='line.6218051.6230269.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.322' stroke-width='1.932' x1='364.5' x2='445.5' y1='265.5' y2='166.5' /></g>
+<g class='nwlinkwrapper' id='edge.6218051.6221997'>
+<line class='nw_edge' id='line.6218051.6221997.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='364' x2='486'  y1='265' y2='246' />
+<line class='nw_edge' id='line.6218051.6221997.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.508' stroke-width='3.048' x1='364.5' x2='486.5' y1='265.5' y2='246.5' /></g>
+<g class='nwlinkwrapper' id='edge.6221997.6230269'>
+<line class='nw_edge' id='line.6221997.6230269.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='486' x2='445'  y1='246' y2='166' />
+<line class='nw_edge' id='line.6221997.6230269.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.31133333333333335' stroke-width='1.868' x1='486.5' x2='445.5' y1='246.5' y2='166.5' /></g>
+<g class='nwlinkwrapper' id='edge.6221997.6226535'>
+<line class='nw_edge' id='line.6221997.6226535.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='486' x2='588'  y1='246' y2='188' />
+<line class='nw_edge' id='line.6221997.6226535.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.344' stroke-width='2.064' x1='486.5' x2='588.5' y1='246.5' y2='188.5' /></g>
+<g class='nwlinkwrapper' id='edge.6226535.6230269'>
+<line class='nw_edge' id='line.6226535.6230269.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='588' x2='445'  y1='188' y2='166' />
+<line class='nw_edge' id='line.6226535.6230269.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.20466666666666666' stroke-width='1.228' x1='588.5' x2='445.5' y1='188.5' y2='166.5' /></g>
+</g>
+<g id='nodes'>
+<defs>
+    <filter id='filter_shadow'>
+        <feGaussianBlur stdDeviation='1' />
+    </filter>
+</defs>
+<defs>
+    <filter height='200%' id='filter_bg_text' width='200%' x='-50%' y='-50%'>
+        <feGaussianBlur stdDeviation='1.8' />
+    </filter>
+    <filter height='200%' id='filter_bg_textFlat' width='200%' x='-50%' y='-50%'>
+        <feGaussianBlur stdDeviation='0' />
+    </filter>
+</defs>
+<defs>
+    <linearGradient id='bubble_gradient1' x1='50%' x2='50%' y1='100%' y2='0%'>
+        <stop offset='0.2472' style='stop-color:#FAFAFA;' />
+        <stop offset='0.4517' style='stop-color:#A2A2A2;' />
+        <stop offset='0.6785' style='stop-color:#5E5E5E;' />
+        <stop offset='0.8975' style='stop-color:#3C3C3C;' />
+        <stop offset='1' style='stop-color:#383838;' />
+    </linearGradient>
+    <radialGradient cx='50%' cy='50%' id='bubble_gradient2' r='50%'>
+        <stop offset='0' style='stop-color:#FFFFFF;' />
+        <stop offset='0.3726' style='stop-color:#FDFDFD;' />
+        <stop offset='0.6026' style='stop-color:#EBEBEB;' />
+        <stop offset='0.7463' style='stop-color:#C4C4C4;' />
+        <stop offset='0.8581' style='stop-color:#888888;' />
+        <stop offset='0.9523' style='stop-color:#373737;' />
+        <stop offset='0.9926' style='stop-color:#090909;' />
+        <stop offset='1' style='stop-color:#000000;' />
+    </radialGradient>
+    <radialGradient cx='50%' cy='50%' id='bubble_gradientFbbb' r='50%'>
+        <stop offset='0' style='stop-color:#FFFFFF;' />
+        <stop offset='0.8400' style='stop-color:#FFFFFF;' />
+        <stop offset='0.8800' style='stop-color:#000000;' />
+        <stop offset='1' style='stop-color:#000000;' />
+    </radialGradient>
+</defs>
+<defs>
+    <linearGradient id='brilliance_gradient' x1='50%' x2='50%' y1='0%' y2='100%'>
+        <stop offset='0' style='stop-color:#FFFFFF;stop-opacity:1;' />
+        <stop offset='0.1' style='stop-color:#FFFFFF;stop-opacity:0.99;' />
+        <stop offset='1' style='stop-color:#FFFFFF;stop-opacity:0;' />
+    </linearGradient>
+</defs>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='NCBP2' data-x_pos='364' data-y_pos='265' id='node.6218051'>
+<circle cx='364' cy='265' fill='#FFFFFF' r='20' />
+<circle cx='364' cy='265' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='364' cy='265' fill='rgb(255,0,0)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='364' y='269'>NCBP2</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='364' y='269'>NCBP2</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='LARP4' data-x_pos='588' data-y_pos='188' id='node.6226535'>
+<circle cx='588' cy='188' fill='#FFFFFF' r='20' />
+<circle cx='588' cy='188' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='588' cy='188' fill='rgb(255,193,101)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='588' y='192'>LARP4</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='588' y='192'>LARP4</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='METAP2' data-x_pos='402' data-y_pos='50' id='node.6217933'>
+<circle cx='402' cy='50' fill='#FFFFFF' r='20' />
+<circle cx='402' cy='50' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='402' cy='50' fill='rgb(142,178,0)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='402' y='54'>METAP2</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='402' y='54'>METAP2</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='DDX55' data-x_pos='526' data-y_pos='83' id='node.6212215'>
+<circle cx='526' cy='83' fill='#FFFFFF' r='20' />
+<circle cx='526' cy='83' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='526' cy='83' fill='rgb(132,255,101)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='526' y='87'>DDX55</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='526' y='87'>DDX55</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='DDX3X' data-x_pos='445' data-y_pos='166' id='node.6230269'>
+<circle cx='445' cy='166' fill='#FFFFFF' r='20' />
+<circle cx='445' cy='166' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='445' cy='166' fill='rgb(0,178,71)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='445' y='170'>DDX3X</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='445' y='170'>DDX3X</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='RPS3' data-x_pos='346' data-y_pos='140' id='node.6214689'>
+<circle cx='346' cy='140' fill='#FFFFFF' r='20' />
+<circle cx='346' cy='140' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='346' cy='140' fill='rgb(101,254,255)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='346' y='144'>RPS3</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='346' y='144'>RPS3</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='SUB1' data-x_pos='622' data-y_pos='257' id='node.6213977'>
+<circle cx='622' cy='257' fill='#FFFFFF' r='20' />
+<circle cx='622' cy='257' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='622' cy='257' fill='rgb(0,71,178)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='622' y='261'>SUB1</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='622' y='261'>SUB1</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='PABPC4' data-x_pos='486' data-y_pos='246' id='node.6221997'>
+<circle cx='486' cy='246' fill='#FFFFFF' r='20' />
+<circle cx='486' cy='246' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='486' cy='246' fill='rgb(132,101,255)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='486' y='250'>PABPC4</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='486' y='250'>PABPC4</text>
+</g>
+</g>
+</svg>

@@ -1,0 +1,8 @@
+Dataset	FLEXI.RNA	Agotron.only	Mirtron.only	Agotron.and.Mirtron	Agotron.or.Mirtron	Embedded.snoRNA.scaRNA
+K-562	3,659	38	50	8	96 (2.6%)	15/1 (0.4%)
+HEK-293T	4,336	34	61	7	102 (2.4%)	19/0 (0.4%)
+HeLa S3	2,201	20	15	3	38 (1.7%)	30/2 (1.4%)
+UHRR	3,269	31	46	6	83 (2.5%)	22/1 (0.7%)
+Plasma	224	28	15	8	51 (22.8%)	0/0 (0.0%)
+Total	8,144	56	105	9	170 (2.1%)	43/2 (0.5%)
+GRCh38	51,645	76	283	12	371 (0.7%)	79/2 (0.2%)

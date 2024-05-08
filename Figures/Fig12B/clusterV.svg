@@ -1,0 +1,98 @@
+<svg class='notselectable nwlinkhovertoggle' height='218' id='svg_network_image' width='976' style='vertical-align:top;' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+<style type='text/css'><![CDATA[
+.nwbubblecoloredcircle { opacity: 0.4; }
+.nwbubbletransparentdcircle { opacity: 0.1; }
+.nwnodecontainer:hover { cursor: pointer; }
+.nwnodecontainer:hover .nwbubblecoloredcircle { opacity: 0.2; }
+.nwnodecontainerselected .nwbubblecoloredcircle { fill: rgb(255,0,0) !important; }
+.nwnodecontainerwhiteout .nwbubblecoloredcircle { fill: rgb(255,255,255) !important; }
+text { font-family: Arial; font-size: 12px; }
+.nwlinkhovertoggle .nwlinkwrapper:hover { cursor: pointer; }
+]]></style>
+<g id='edges'>
+<g class='nwlinkwrapper' id='edge.6221324.6228993'>
+<line class='nw_edge' id='line.6221324.6228993.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='516' x2='474'  y1='157' y2='50' />
+<line class='nw_edge' id='line.6221324.6228993.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.5186666666666667' stroke-width='3.112' x1='516.5' x2='474.5' y1='157.5' y2='50.5' /></g>
+<g class='nwlinkwrapper' id='edge.6221324.6225036'>
+<line class='nw_edge' id='line.6221324.6225036.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='516' x2='402'  y1='157' y2='173' />
+<line class='nw_edge' id='line.6221324.6225036.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.6646666666666666' stroke-width='3.988' x1='516.5' x2='402.5' y1='157.5' y2='173.5' /></g>
+<g class='nwlinkwrapper' id='edge.6225036.6228993'>
+<line class='nw_edge' id='line.6225036.6228993.0' stroke='rgb(200,200,200)' stroke-opacity='0' stroke-width='7' x1='402' x2='474'  y1='173' y2='50' />
+<line class='nw_edge' id='line.6225036.6228993.1'  stroke='rgb(31,41,74)'  stroke-opacity='0.25466666666666665' stroke-width='1.528' x1='402.5' x2='474.5' y1='173.5' y2='50.5' /></g>
+</g>
+<g id='nodes'>
+<defs>
+    <filter id='filter_shadow'>
+        <feGaussianBlur stdDeviation='1' />
+    </filter>
+</defs>
+<defs>
+    <filter height='200%' id='filter_bg_text' width='200%' x='-50%' y='-50%'>
+        <feGaussianBlur stdDeviation='1.8' />
+    </filter>
+    <filter height='200%' id='filter_bg_textFlat' width='200%' x='-50%' y='-50%'>
+        <feGaussianBlur stdDeviation='0' />
+    </filter>
+</defs>
+<defs>
+    <linearGradient id='bubble_gradient1' x1='50%' x2='50%' y1='100%' y2='0%'>
+        <stop offset='0.2472' style='stop-color:#FAFAFA;' />
+        <stop offset='0.4517' style='stop-color:#A2A2A2;' />
+        <stop offset='0.6785' style='stop-color:#5E5E5E;' />
+        <stop offset='0.8975' style='stop-color:#3C3C3C;' />
+        <stop offset='1' style='stop-color:#383838;' />
+    </linearGradient>
+    <radialGradient cx='50%' cy='50%' id='bubble_gradient2' r='50%'>
+        <stop offset='0' style='stop-color:#FFFFFF;' />
+        <stop offset='0.3726' style='stop-color:#FDFDFD;' />
+        <stop offset='0.6026' style='stop-color:#EBEBEB;' />
+        <stop offset='0.7463' style='stop-color:#C4C4C4;' />
+        <stop offset='0.8581' style='stop-color:#888888;' />
+        <stop offset='0.9523' style='stop-color:#373737;' />
+        <stop offset='0.9926' style='stop-color:#090909;' />
+        <stop offset='1' style='stop-color:#000000;' />
+    </radialGradient>
+    <radialGradient cx='50%' cy='50%' id='bubble_gradientFbbb' r='50%'>
+        <stop offset='0' style='stop-color:#FFFFFF;' />
+        <stop offset='0.8400' style='stop-color:#FFFFFF;' />
+        <stop offset='0.8800' style='stop-color:#000000;' />
+        <stop offset='1' style='stop-color:#000000;' />
+    </radialGradient>
+</defs>
+<defs>
+    <linearGradient id='brilliance_gradient' x1='50%' x2='50%' y1='0%' y2='100%'>
+        <stop offset='0' style='stop-color:#FFFFFF;stop-opacity:1;' />
+        <stop offset='0.1' style='stop-color:#FFFFFF;stop-opacity:0.99;' />
+        <stop offset='1' style='stop-color:#FFFFFF;stop-opacity:0;' />
+    </linearGradient>
+</defs>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='DKC1' data-x_pos='516' data-y_pos='157' id='node.6221324'>
+<circle cx='516' cy='157' fill='#FFFFFF' r='20' />
+<circle cx='516' cy='157' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='516' cy='157' fill='rgb(255,0,0)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='516' y='161'>DKC1</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='516' y='161'>DKC1</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='SMNDC1' data-x_pos='567' data-y_pos='95' id='node.6221330'>
+<circle cx='567' cy='95' fill='#FFFFFF' r='20' />
+<circle cx='567' cy='95' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='567' cy='95' fill='rgb(224,255,101)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='567' y='99'>SMNDC1</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='567' y='99'>SMNDC1</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='AATF' data-x_pos='474' data-y_pos='50' id='node.6228993'>
+<circle cx='474' cy='50' fill='#FFFFFF' r='20' />
+<circle cx='474' cy='50' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='474' cy='50' fill='rgb(0,178,71)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='474' y='54'>AATF</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='474' y='54'>AATF</text>
+</g>
+<g class='nwnodecontainer' data-action_option='remove' data-exp_height='250' data-exp_width='324' data-radius='20' data-safe_div_label='NOLC1' data-x_pos='402' data-y_pos='173' id='node.6225036'>
+<circle cx='402' cy='173' fill='#FFFFFF' r='20' />
+<circle cx='402' cy='173' fill='url(#bubble_gradientFbbb)' opacity='0.45' r='20' />
+<circle class='nwbubblecoloredcircle'  cx='402' cy='173' fill='rgb(101,163,255)' r='20' />
+<text fill='rgb(247,246,242)' filter='url(#filter_bg_textFlat)' opacity='1.0' stroke='rgb(247,246,242)' stroke-width='3' stroke-linecap='butt' text-anchor='middle' x='402' y='177'>NOLC1</text>
+<text fill='rgb(0,0,0)' opacity='1.0' text-anchor='middle' x='402' y='177'>NOLC1</text>
+</g>
+</g>
+</svg>

@@ -1,0 +1,11 @@
+### download hg19 gtf from ENSEMBLE website, convert to bed
+### add "chr" infront of the chromosome name in hg38 genes bed file
+### liftOver hg38 to hg19 bed
+### intersect to see how many genes have different ENSG ID
+### make a dict table, column I is hg38 ENSG ID, column II is hg19 ENSG id
+bedtools intersect -s -f 0.99 -r -wo -a lift2hg19.genes.bed -b hg19v87.bed |awk '$4!=$10 {print $4"\t"$10}' > liftedhg38ENSG_ID_table_to_hg19ENSG_ID
+
+### pick some table to see if the ENCODE results gene idc can alll be found in hg19 bed
+awk 'NR>1 {print $2}'head RBP51/ZNF800_K562_ENCFF251DMN.tsv|cut -f 1 -d"." > test.id
+grep -f test.id hg19v87.bed |wc -l
+

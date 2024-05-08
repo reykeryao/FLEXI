@@ -1,0 +1,18 @@
+### 1. collect MATs output after batch effect normalization, from ENCODE, select all tar files and downlaod,
+###    filter irrelavent files, only keep directories contain MATS_Norm_output subfolder.
+###    run ENCODE_rMAT.r, the first section, to get SE and RI bed file, and bound FLEXI bed file
+### then run this script to get intersect information. keep in mind MATS results are hg19 based, and FLEXI is hg38 based, so FELXI.bed need
+### to liftover to hg19 coordinates.
+
+### 51 RBPs. 90 dataset (HepG2 and K562) 
+### no AGO1-4 and DICER, whcih are PAR-CLIP, not from the ENCODE eCLIP
+
+for i in *HepG2 *K562;
+	do 
+		cd $i/MATS_Norm_output/; 
+		bedtools intersect -s -f 0.9 -r -wao -a SE_short_intron.bed -b FLEXI.bed |cut -f 4-9,13,14 | sort -u > SE_FLEXI.intersect;
+		bedtools intersect -s -f 0.9 -r -wao -a RI_short_intron.bed -b FLEXI.bed |cut -f 4-9,13,14 | sort -u > RI_FLEXI.intersect;
+		cd ../../;
+	done
+
+### then go back to ENCODE_rMAT.r to make ECDF plots.  
