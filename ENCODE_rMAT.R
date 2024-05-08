@@ -15,7 +15,7 @@ for (i in 1:length(RBP_meta$SubDir)){
   subDir<-RBP_meta$SubDir[i]
   RBP<-strsplit(subDir,split = "-")[[1]][1]
   print (paste0("Processing ",subDir))
-  SE<-read.delim(paste0(MATS_dir,subDir,"/MATS_Norm_output/SE.MATS.JunctionCountOnly.txt"))
+  SE<-read.delim(gzfile(paste0(MATS_dir,subDir,"/MATS_Norm_output/SE.MATS.JunctionCountOnly.txt.gz")))
   ## in SE the introns around (up/down) the skipped exon is the one should check: if bound FLEXI|unbound FLEXI|short intron
   ## ie. intron start/end (hg19) should be upstreamEE to exon_Start_0base, or exonEnd to downstreamES
   colNames<-c("Chr","St","Ed","ID","Symbol","Strand","PValue","FDR","IncLevelDifference")
@@ -25,7 +25,7 @@ for (i in 1:length(RBP_meta$SubDir)){
   bedFile<-bedFile[order(bedFile$Chr,bedFile$St),]
   write.table(bedFile,paste0(MATS_dir,subDir,"/MATS_Norm_output/SE_intron.bed"),quote=F,sep="\t",row.names=F,col.names=F)
   
-  RI<-read.delim(paste0(MATS_dir,subDir,"/MATS_Norm_output/RI.MATS.JunctionCountOnly.txt"))
+  RI<-read.delim(gzfile(paste0(MATS_dir,subDir,"/MATS_Norm_output/RI.MATS.JunctionCountOnly.txt.gz")))
   ## in RI the retained intron is the one should check: if bound FLEXI|unbound FLEXI|short intron
   ## ie. intron start/end (hg19) should be upstreamEE to downstreamES
   RI<-RI[,c(4,9,10,2,3,5,19:23)]
@@ -35,6 +35,8 @@ for (i in 1:length(RBP_meta$SubDir)){
   RI<-RI[order(RI$Chr,RI$St),]
   write.table(RI,paste0(MATS_dir,subDir,"/MATS_Norm_output/RI_intron.bed"),quote=F,sep="\t",row.names=F,col.names=F)
 }
+
+### gzip bed file after the loop
 '''
 ### gennerate RBP intersection with hg19 version of the IDR_RBP.bed
 ### for i in *HepG2 *K562;do 
@@ -54,7 +56,7 @@ RBP_folder<-read.table(paste0(RBP_dir,"51RBP.folder"))
 colNames<-c("Chr","St","Ed","ID","Symbol","Strand","PValue","FDR","IncLevel1","IncLevel2","IncLevelDifference","RBP","FLEXI","Bound")
 for (i in 1:dim(RBP_folder)[1]){
   RBP<-strsplit(RBP_folder$V1[i],split = "-")[[1]][1]
-  SE<-read.table(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/SE.intersect"),col.names = colNames)
+  SE<-read.table(gzfile(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/SE.intersect.gz")),col.names = colNames)
   ### re-typing column 17 "FLEXI", into $Type: FLEXI, OSI and LI
   SE$Type<-"FLEXI"
   SE$Type[(SE$Ed-SE$St)<301 & SE$FLEXI=="." ]<-"OSI"
@@ -64,7 +66,7 @@ for (i in 1:dim(RBP_folder)[1]){
   SE$Bound[grepl(RBP,SE$RBP)]<-"T"
   write.table(SE,paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/SE.info"),quote=F,sep="\t",row.names=F)
   
-  RI<-read.table(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/RI.intersect"),col.names = colNames)
+  RI<-read.table(gzfile(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/RI.intersect.gz")),col.names = colNames)
   ### re-typing column 17 "FLEXI", into $Type: FLEXI, OSI and LI
   RI$Type<-"FLEXI"
   RI$Type[(RI$Ed-RI$St)<301 & RI$FLEXI=="." ]<-"OSI"
@@ -74,6 +76,8 @@ for (i in 1:dim(RBP_folder)[1]){
   RI$Bound[grepl(RBP,RI$RBP)]<-"T"
   write.table(RI,paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/RI.info"),quote=F,sep="\t",row.names=F)
 }
+
+## gzip info file after the loop
 '''
 RBP_dir<-"MATS/RBP51/"
 RBP_folder<-read.table(paste0(RBP_dir,"51RBP.folder"))
@@ -86,7 +90,7 @@ for (j in 1:3){
   SE_list<-""
   for (i in 1:dim(RBP_folder)[1]){
     RBP<-strsplit(RBP_folder$V1[i],split = "-")[[1]][1]
-    SE<-read.delim(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/SE.info"))
+    SE<-read.delim(gzfile(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/SE.info.gz")))
     ### make ecdf of sub types
     SE<-SE[SE$Type==Types[j],]
     pV<-ks.test(SE$IncLevelDifference[SE$Bound],SE$IncLevelDifference[!SE$Bound])$p.value
@@ -124,7 +128,7 @@ for (j in 1:3){
   RI_list<-""
   for (i in 1:dim(RBP_folder)[1]){
     RBP<-strsplit(RBP_folder$V1[i],split = "-")[[1]][1]
-    RI<-read.delim(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/RI.info"))
+    RI<-read.delim(gzfile(paste0(RBP_dir,RBP_folder$V1[i],"/MATS_Norm_output/RI.info.gz")))
     ### make ecdf of sub types
     RI<-RI[RI$Type==Types[j],]
     pV<-ks.test(RI$IncLevelDifference[RI$Bound],RI$IncLevelDifference[!RI$Bound])$p.value
