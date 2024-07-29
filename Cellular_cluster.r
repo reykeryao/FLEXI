@@ -1000,15 +1000,18 @@ dev.off()
 ### all 4 cell cytoplasm FLEXIs
 ### Res names: "K562" "Hela" "MDA"  "MCF"  "All" 
 
-pdf("Figures/Fig12A_1.pdf",width=11,height=6)
-par(mfrow=c(1,4))
+pdf("Figures/Fig12A_1.pdf",width=11,height=8)
+par(mfcol=c(2,4))
 for (k in 1:4){
   tmp<-Res[[k]]
+  tmp_all<-sub("_FLEXI","",rownames(tmp))
+  tmp_all<-FLEXI_RBP[FLEXI_RBP$ID%in%tmp_all,]
+  
   tmp<-sub("_FLEXI","",rownames(tmp)[tmp$log2FoldChange>0])
   tmp<-FLEXI_RBP[FLEXI_RBP$ID%in%tmp,]
   # Cluster 1
   for (m in 1:6){
-    # Cluster 1
+    # Cluster 1 to 6
     tmp1<-tmp[tmp$RBP%in%Clusters[[m]],]
     F_id<-unique(tmp1$ID)
     for (i in 1:length(F_id)){
@@ -1052,25 +1055,77 @@ for (k in 1:4){
       }
     }
     if (m==1){
-      bar_4cell<-bar_tmp
+      bar_4cell_1<-bar_tmp
     } else {
-      bar_4cell<-cbind(bar_4cell,bar_tmp)
+      bar_4cell_1<-cbind(bar_4cell_1,bar_tmp)
+    }
+    tmp1<-tmp_all[tmp_all$RBP%in%Clusters[[m]],]
+    F_id<-unique(tmp1$ID)
+    for (i in 1:length(F_id)){
+      print (i)
+      if (i==1){bar_tmp<-rep(0,5)}
+      id<-F_id[i]
+      FLEXI_tmp<-tmp1[tmp1$ID%in%id,c(1:4,10,8:9)]
+      FLEXI_tmp<-FLEXI_tmp[FLEXI_tmp$RBP%in%Clusters[[m]],]
+      RBP_tmp<-unique(FLEXI_tmp$RBP)
+      for (j in 1:dim(FLEXI_tmp)[1]){
+        FLEXI_tmp$range[j]<-list(c(FLEXI_tmp$RBP_st[j]:FLEXI_tmp$RBP_ed[j]))
+      }
+      if (length(RBP_tmp)==1){
+        bar_tmp[1]<-bar_tmp[1]+1
+      } else if (length(RBP_tmp)==2){
+        range1<-unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[1]]))
+        range2<-unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[2]]))
+        inter_tmp<-intersect(range1,range2)
+        if (length(inter_tmp)>0){
+          bar_tmp[2]<-bar_tmp[2]+1
+        } else {
+          bar_tmp[3]<-bar_tmp[3]+1
+        }
+      } else {
+        for (j in 1:length(RBP_tmp)){
+          if (j==1){
+            range1<-list(unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[j]])))
+            over<-0
+          } else {
+            range2<-unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[j]]))
+            range1<-c(range1,list(range2))
+            o_flag<-lapply(range1[1:(j-1)],function(x){intersect(unlist(x),range2)})
+            over<-over+sum(lapply(o_flag,length)>0)
+          }
+        }
+        if (over>0){
+          bar_tmp[4]<-bar_tmp[4]+1
+        } else {
+          bar_tmp[5]<-bar_tmp[5]+1
+        }
+      }
+    }
+    if (m==1){
+      bar_4cell_2<-bar_tmp
+    } else {
+      bar_4cell_2<-cbind(bar_4cell_2,bar_tmp)
     }
   }
-  colnames(bar_4cell)<-names(Clusters)
-  barplot(prop.table(bar_4cell,2),beside=F,col=col,main=names(Res)[k])
+  colnames(bar_4cell_1)<-names(Clusters)
+  colnames(bar_4cell_2)<-names(Clusters)
+  barplot(prop.table(bar_4cell_1,2),beside=F,col=col,main=paste0(names(Res)[k],": Cytoplasmic FLEXIs (LFC>0)"))
+  barplot(prop.table(bar_4cell_2,2),beside=F,col=col,main=paste0(names(Res)[k],": All cellular FLEXIs"))
 }
 dev.off()
 
-pdf("Figures/Fig12A_2.pdf",width=11,height=6)
-par(mfrow=c(1,6))
+pdf("Figures/Fig12A_2.pdf",width=11,height=8)
+par(mfcol=c(2,6))
 for (m in 1:6){
   ### overalpping in cluster 1-6
   for (k in 1:4){
     tmp<-Res[[k]]
+    tmp_all<-sub("_FLEXI","",rownames(tmp))
+    tmp_all<-FLEXI_RBP[FLEXI_RBP$ID%in%tmp_all,]
+    
     tmp<-sub("_FLEXI","",rownames(tmp)[tmp$log2FoldChange>0])
     tmp<-FLEXI_RBP[FLEXI_RBP$ID%in%tmp,]
-    # Cluster 1
+    # Cluster 1 to 6, cytoplasmic FLEXI (LFC>0)
     tmp1<-tmp[tmp$RBP%in%Clusters[[m]],]
     F_id<-unique(tmp1$ID)
     for (i in 1:length(F_id)){
@@ -1114,12 +1169,117 @@ for (m in 1:6){
       }
     }
     if (k==1){
-      bar_4cell<-bar_tmp
+      bar_4cell_1<-bar_tmp
     } else {
-      bar_4cell<-cbind(bar_4cell,bar_tmp)
+      bar_4cell_1<-cbind(bar_4cell_1,bar_tmp)
+    }
+    
+    # Cluster 1 to 6, all cellular FLEXI
+    tmp1<-tmp_all[tmp_all$RBP%in%Clusters[[m]],]
+    F_id<-unique(tmp1$ID)
+    for (i in 1:length(F_id)){
+      print (i)
+      if (i==1){bar_tmp<-rep(0,5)}
+      id<-F_id[i]
+      FLEXI_tmp<-tmp1[tmp1$ID%in%id,c(1:4,10,8:9)]
+      FLEXI_tmp<-FLEXI_tmp[FLEXI_tmp$RBP%in%Clusters[[m]],]
+      RBP_tmp<-unique(FLEXI_tmp$RBP)
+      for (j in 1:dim(FLEXI_tmp)[1]){
+        FLEXI_tmp$range[j]<-list(c(FLEXI_tmp$RBP_st[j]:FLEXI_tmp$RBP_ed[j]))
+      }
+      if (length(RBP_tmp)==1){
+        bar_tmp[1]<-bar_tmp[1]+1
+      } else if (length(RBP_tmp)==2){
+        range1<-unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[1]]))
+        range2<-unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[2]]))
+        inter_tmp<-intersect(range1,range2)
+        if (length(inter_tmp)>0){
+          bar_tmp[2]<-bar_tmp[2]+1
+        } else {
+          bar_tmp[3]<-bar_tmp[3]+1
+        }
+      } else {
+        for (j in 1:length(RBP_tmp)){
+          if (j==1){
+            range1<-list(unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[j]])))
+            over<-0
+          } else {
+            range2<-unique(unlist(FLEXI_tmp$range[FLEXI_tmp$RBP==RBP_tmp[j]]))
+            range1<-c(range1,list(range2))
+            o_flag<-lapply(range1[1:(j-1)],function(x){intersect(unlist(x),range2)})
+            over<-over+sum(lapply(o_flag,length)>0)
+          }
+        }
+        if (over>0){
+          bar_tmp[4]<-bar_tmp[4]+1
+        } else {
+          bar_tmp[5]<-bar_tmp[5]+1
+        }
+      }
+    }
+    if (k==1){
+      bar_4cell_2<-bar_tmp
+    } else {
+      bar_4cell_2<-cbind(bar_4cell_2,bar_tmp)
     }
   }
-  colnames(bar_4cell)<-names(Res)[1:4]
-  barplot(prop.table(bar_4cell,2),beside=F,col=col,main=paste0("Cluster ",m),cex.names =0.5)
+  colnames(bar_4cell_1)<-names(Res)[1:4]
+  colnames(bar_4cell_2)<-names(Res)[1:4]
+  barplot(prop.table(bar_4cell_1,2),beside=F,col=col,main=paste0("Cluster ",m),cex.names =0.5)
+  barplot(prop.table(bar_4cell_2,2),beside=F,col=col,main=paste0("Cluster ",m),cex.names =0.5)
+}
+dev.off()
+
+### reads in FLEXIs with RBP binding site, density plot of relative length
+dat<-read.csv("Cellular_frac/raw_counts.csv",row.names = 1)
+dat<-dat[dat$Type=="FLEXI",]
+dat$K562_cyto<-dat$K562_Cyto_1+dat$K562_Cyto_2
+dat$K562_nuc<-dat$K562_Nuc_1+dat$K562_Nuc_2
+dat$Hela_cyto<-dat$HeLa_Cyto_1+dat$HeLa_Cyto_2
+dat$Hela_nuc<-dat$HeLa_Nuc_1+dat$HeLa_Nuc_2
+dat$MDA_cyto<-dat$MDA_Cyto_1+dat$MDA_Cyto_2
+dat$MDA_nuc<-dat$MDA_Nuc_1+dat$MDA_Nuc_2
+dat$MCF7_cyto<-dat$MCF7_Cyto_1+dat$MCF7_Cyto_2
+dat$MCF7_nuc<-dat$MCF7_Nuc_1+dat$MCF7_Nuc_2
+dat<-dat[,c(1,29:36)]
+### cluster I RBP
+C1_RBP<-c("LARP4","PABPC4","SUB1","DDX3X","RPS3","NCBP2","DDX55","METAP2")
+col_name<-colnames(dat)[-1]
+file_name<-paste0("/stor/home/yaojun/Work/Cell_frac/",col_name,".intron.per")
+pdf("temp_fig/length.pdf",width=16,height=8)
+par(mfrow=c(4,8),cex=0.5,mar=c(3,3,3,1))
+for (i in 1:4){
+  ### cyto per data
+  cyto_per<-read.table(file_name[2*i-1],col.names=c("ID","Reads","Per"))
+  cyto_per$Per[cyto_per$Per>1]<-1
+  ### nucl per data
+  nuc_per<-read.table(file_name[2*i],col.names=c("ID","Reads","Per"))
+  nuc_per$Per[nuc_per$Per>1]<-1
+  for (j in 1:8){
+    RBP_name<-C1_RBP[j]
+    ### introns with binding site of the RBP
+    RBP_intron<-unique(FLEXI_RBP$ID[FLEXI_RBP$RBP==RBP_name])
+    ### cyto intorn in FLEXI
+    cyto_FLEXI<-intersect(unique(dat$Ensbl[dat[,(2*i)]>0]),RBP_intron)
+    cyto_FLEXI<-cyto_per[cyto_per$ID%in%cyto_FLEXI,]
+    cyto_FLEXI<-density(cyto_FLEXI$Per*100)
+    ### nuc intorn in FLEXI
+    nuc_FLEXI<-intersect(unique(dat$Ensbl[dat[,(2*i+1)]>0]),RBP_intron)
+    nuc_FLEXI<-cyto_per[cyto_per$ID%in%nuc_FLEXI,]
+    nuc_FLEXI<-density(nuc_FLEXI$Per*100)
+    
+    ### plot
+    ### figure out max
+    y_max<-max(c(cyto_FLEXI$y,nuc_FLEXI$y))
+    y_max<-ceiling(y_max/10^floor(log10(y_max)))*10^floor(log10(y_max))
+    main_t<-paste(str_split_i(col_name[2*i],"_",1),RBP_name,sep=":")
+    plot(nuc_FLEXI,xlim=c(-10,110),ylim=c(0,y_max),xlab=NA,ylab=NA,main=main_t)
+    lines(cyto_FLEXI,col="red")
+    if (i==1 & j==1){
+      legend("topleft",bty="n",legend = c("Nuclus FLEXIs","Cytoplasmic FLEXIs"),
+             col=c("black","red"),lty=1)
+    }
+
+  }
 }
 dev.off()

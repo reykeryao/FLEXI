@@ -1,6 +1,5 @@
 rm(list=ls())
 library(tidyverse)
-library(ggalluvial)
 library(ggplotify)
 library(matrixStats)
 library(tidyr)
@@ -357,6 +356,16 @@ rm(scol)
 #FigS8 IGV screen shots in folder
 
 #Fig2B histogram of relative length of the intronic reads
+file_name<-c("K562","HEK","Hela","UHRR")
+for (i in 1:4){
+  per_dat<-read.delim(gzfile(paste0(file_name[i],".per.info.gz")))
+  if (i==1){
+   combined<-per_dat
+  } else {
+    combined<-rbind(combined,per_dat)
+  }
+}
+
 p1 <- hist(combined$Per[combined$nonFLEXI!=1]) 
 p2 <- hist(combined$Per[combined$nonFLEXI==1])   
 pdf("Figures/Fig2B.pdf")
@@ -432,12 +441,12 @@ write.table(Cell_counts,"Fig3A_downsampled.counts",quote=F,sep="\t",row.names=F)
 Cell_counts_down<-read.delim("Fig3A_downsampled.counts")
 
 ### add FLEXI marker for label
-pick<-c("23I_DOCK6___ENSG00000130158___ENST00000587656___protein_coding___protein_coding",
-        "11I_SGK1___ENSG00000118515___ENST00000237305___protein_coding___protein_coding",
-        "1I_FTH1___ENSG00000167996___ENST00000532601___protein_coding___protein_coding",
-        "11I_THBS1___ENSG00000137801___ENST00000260356___protein_coding___protein_coding",
-        "1I_RPS2___ENSG00000140988___ENST00000526586___protein_coding___protein_coding",
-        "2I_ACTG1___ENSG00000184009___ENST00000575842___protein_coding___protein_coding")
+#pick<-c("23I_DOCK6___ENSG00000130158___ENST00000587656___protein_coding___protein_coding",
+#        "11I_SGK1___ENSG00000118515___ENST00000237305___protein_coding___protein_coding",
+#        "1I_FTH1___ENSG00000167996___ENST00000532601___protein_coding___protein_coding",
+#        "11I_THBS1___ENSG00000137801___ENST00000260356___protein_coding___protein_coding",
+#        "1I_RPS2___ENSG00000140988___ENST00000526586___protein_coding___protein_coding",
+#        "2I_ACTG1___ENSG00000184009___ENST00000575842___protein_coding___protein_coding")
 
 pdf("Figures/Fig3B.pdf",width = 9,height=9)
 par(pch=16,mfcol=c(3,3),pty="s")
@@ -450,7 +459,16 @@ sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562_repo>=8,]
 sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela_repo>=10,]
 points(log2(sig.y[,c(2,4)]),col="#FF000050")
 points(log2(sig.x[,c(2,4)]),col="#0000FF50")
-lab_tmp<-unique(rbind(sig.x[rownames(sig.x)%in%pick,],sig.y[rownames(sig.y)%in%pick,]))
+### identify the most extreme FLEXIs near the axis
+top2y<-sig.y %>%
+  filter(K562==2^-10) %>%
+  arrange(Hela) 
+top2y<-rev(rownames(top2y))[1:2]
+top2x<-sig.x %>%
+  filter(Hela==2^-10) %>%
+  arrange(K562) 
+top2x<-rev(rownames(top2x))[1:2]
+lab_tmp<-unique(rbind(sig.x[rownames(sig.x)%in%top2x,],sig.y[rownames(sig.y)%in%top2y,]))
 if (dim(lab_tmp)[1]>0){
   pick_GID<-data.frame("ID"=unique(str_split_i(rownames(lab_tmp),"___",2)),
                        "Name"=unique(str_split_i(rownames(lab_tmp),"_",2)))
@@ -536,8 +554,15 @@ sig.x<-FLEXI_by_GID[FLEXI_by_GID$HEK_repo>=8,]
 sig.y<-FLEXI_by_GID[FLEXI_by_GID$Hela_repo>=10,]
 points(log2(sig.y[,c(3,4)]),col="#FF000080")
 points(log2(sig.x[,c(3,4)]),col="#0000FF80")
-
-lab_tmp<-unique(rbind(sig.x[rownames(sig.x)%in%pick,],sig.y[rownames(sig.y)%in%pick,]))
+top2y<-sig.y %>%
+  filter(HEK==2^-10) %>%
+  arrange(Hela) 
+top2y<-rev(rownames(top2y))[1:2]
+top2x<-sig.x %>%
+  filter(Hela==2^-10) %>%
+  arrange(HEK) 
+top2x<-rev(rownames(top2x))[1:2]
+lab_tmp<-unique(rbind(sig.x[rownames(sig.x)%in%top2x,],sig.y[rownames(sig.y)%in%top2y,]))
 if (dim(lab_tmp)[1]>0){
   pick_GID<-data.frame("ID"=unique(str_split_i(rownames(lab_tmp),"___",2)),
                        "Name"=unique(str_split_i(rownames(lab_tmp),"_",2)))
@@ -624,7 +649,15 @@ sig.x<-FLEXI_by_GID[FLEXI_by_GID$K562_repo>=8,]
 sig.y<-FLEXI_by_GID[FLEXI_by_GID$HEK_repo>=8,]
 points(log2(sig.y[,c(2,3)]),col="#FF000080")
 points(log2(sig.x[,c(2,3)]),col="#0000FF80")
-lab_tmp<-unique(rbind(sig.x[rownames(sig.x)%in%pick,],sig.y[rownames(sig.y)%in%pick,]))
+top2y<-sig.y
+top2y$ratio<-top2y$HEK/top2y$K562
+top2y<-top2y[order(top2y$ratio,decreasing = T),]
+top2y<-rownames(top2y)[1:2]
+top2x<-sig.x
+top2x$ratio<-top2x$K562/top2x$HEK
+top2x<-top2x[order(top2x$ratio,decreasing = T),]
+top2x<-rownames(top2x)[1:2]
+lab_tmp<-unique(rbind(sig.x[rownames(sig.x)%in%top2x,],sig.y[rownames(sig.y)%in%top2y,]))
 if (dim(lab_tmp)[1]>0){
   pick_GID<-data.frame("ID"=unique(str_split_i(rownames(lab_tmp),"___",2)),
                        "Name"=unique(str_split_i(rownames(lab_tmp),"_",2)))
@@ -1597,24 +1630,29 @@ dev.off()
 
 ### FigS7D
 ### examples of cell-specific FLEXIs, also marked in Fig3B
-pick<-c("23I_DOCK6___ENSG00000130158___ENST00000587656___protein_coding___protein_coding",
-        "11I_SGK1___ENSG00000118515___ENST00000237305___protein_coding___protein_coding",
-        "1I_FTH1___ENSG00000167996___ENST00000532601___protein_coding___protein_coding",
-        "11I_THBS1___ENSG00000137801___ENST00000260356___protein_coding___protein_coding",
+pick<-c("2I_ACTG1___ENSG00000184009___ENST00000575842___protein_coding___protein_coding",
         "1I_RPS2___ENSG00000140988___ENST00000526586___protein_coding___protein_coding",
-        "2I_ACTG1___ENSG00000184009___ENST00000575842___protein_coding___protein_coding")
+        "1I_FTH1___ENSG00000167996___ENST00000532601___protein_coding___protein_coding",
+        "11I_SGK1___ENSG00000118515___ENST00000237305___protein_coding___protein_coding",
+        "4I_SESN2___ENSG00000130766___ENST00000253063___protein_coding___protein_coding",
+        "3I_TAOK2___ENSG00000149930___ENST00000308893___protein_coding___protein_coding",
+        "23I_DOCK6___ENSG00000130158___ENST00000587656___protein_coding___protein_coding",
+        "2I_H3F3B___ENSG00000132475___ENST00000587560___protein_coding___protein_coding",
+        "1I_ERRFI1___ENSG00000116285___ENST00000467067___protein_coding___protein_coding",
+        "11I_THBS1___ENSG00000137801___ENST00000260356___protein_coding___protein_coding")
 dat1<-data.frame(label=c(rep("MCF",8),rep("Hela",10),
                          rep("MDA_Bio1",2),rep("UHRR_Bio1",8),rep("K562_Bio1",8),rep("HEK_Bio1",8),
                          rep("MDA_Bio2",5),rep("UHRR_Bio2",10),rep("K562_Bio2",7),rep("HEK_Bio2",2)))
 dat2<-dat[dat$ID%in%pick,]
-pdf("Figures/FigS7D.pdf",height=8,width=11)
-par(mfrow=c(2,3),cex=0.5)
+dat2<-dat2[match(pick,dat2$ID),]
+pdf("Figures/FigS7D.pdf",height=12,width=8)
+par(mfrow=c(5,2),cex=0.5)
 for(i in 1:dim(dat2)[1]){
   tmp<-cbind(t(dat2[i,2:69]),dat1)
   tmp<-tmp[grep("UHRR",tmp$label,invert = T),]
   colnames(tmp)[1]<-"FLEXI"
   boxplot(FLEXI~label,tmp,las=2,xlab=NA,ylab="RPM",main=dat2$ID[i],cex.main=0.5)
-  stripchart(FLEXI~label,tmp,pch=19,cex=2.5,method = "jitter",vertical = TRUE,add = TRUE)
+  stripchart(FLEXI~label,tmp,pch=19,cex=2,method = "jitter",vertical = TRUE,add = TRUE)
 }
 dev.off()
 

@@ -374,3 +374,53 @@ heatmap.2(as.matrix(tmp1),labRow = rowLab,
           symbreaks=F,Colv=F,Rowv=T,cexCol=0.25,
           col =heatPalette)
 dev.off()
+
+
+###
+file_name<-c("K562","HEK","Hela","UHRR")
+FLEXI_ID<-c("9I_ECT2___ENSG00000114346___ENST00000232458___protein_coding___protein_coding",
+            "11I_MARCH6___ENSG00000145495___ENST00000449913___protein_coding___protein_coding",
+            "4I_ARL16___ENSG00000214087___ENST00000621051___protein_coding___protein_coding",
+            "11I_USP21___ENSG00000143258___ENST00000368002___protein_coding___protein_coding",
+            "14I_IK___ENSG00000113141___ENST00000417647___protein_coding___protein_coding")
+for (i in 1:4){
+  per_dat<-read.delim(gzfile(paste0(file_name[i],".per.info.gz")))
+  per_dat<-per_dat[per_dat$ID%in%FLEXI_ID,]
+  if (i==1){
+    tmp<-data.frame(table(per_dat$ID[per_dat$nonFLEXI!=1]))
+  } else {
+    tmp<-merge(tmp,data.frame(table(per_dat$ID[per_dat$nonFLEXI!=1])),by=1,all=T)
+  }
+}
+colnames(tmp)<-c("ID",file_name)
+tmp[is.na(tmp)]<-0
+
+
+## fig2B version for RBP
+#Fig2B histogram of relative length of the intronic reads
+file_name<-c("K562","HEK","Hela","UHRR")
+for (i in 1:4){
+  per_dat<-read.delim(gzfile(paste0(file_name[i],".per.info.gz")))
+  if (i==1){
+    combined<-per_dat
+  } else {
+    combined<-rbind(combined,per_dat)
+  }
+}
+## 53 RBPs
+RBP53<-read.delim("53_RBP_info_fig4_7_new.txt")
+RBP53<-sort(RBP53$RBP.name)
+### RBP full intron inter
+RBP_4cell_plasma<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+pdf("temp_fig/RBP_FLEXI.pdf",height=8.5, width=11)
+par(mfrow=c(4,5),cex=0.5)
+for (i in 1:length(RBP53)){
+  RBP_name<-RBP53[i]
+  RBP_FLEXI<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP==RBP_name])
+  hist(combined$Per[combined$nonFLEXI!=1 & combined$ID%in%RBP_FLEXI],las=2,
+       breaks = seq(0,100,5),
+       xlim=c(0,100),main=RBP_name,xlab="Fragment length (%)",ylab="Reads") 
+}
+dev.off()
+
+
