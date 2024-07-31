@@ -57,12 +57,12 @@ for (i in 1:dim(G_by_RBP)[1]){
 
 
 intersect_list<-list("FLEXI"=RBP_4cell,"OSI"=other_short_intron,"LI"=long_intron,"Gene"=G_by_RBP)
-saveRDS(intersect_list,"FigS14.obj")
+saveRDS(intersect_list,"FigS13.obj")
 '''
 
 
 
-intersect_list<-readRDS("FigS14.obj")
+intersect_list<-readRDS("FigS13.obj")
 ### loop through DE files and do fisher exact test on sig genes, and sig Up/Down genes
 f_list<-list("FLEXI"="","OSI"="","LI"="")
 Gene<-intersect_list$Gene

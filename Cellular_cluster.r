@@ -5,7 +5,7 @@ library(ggalluvial)
 library(ggplotify)
 library(ComplexHeatmap)
 set.seed(740714)
-dat<-read.csv("Cellular_frac/raw_counts.csv",row.names=1)
+dat<-read.csv(gzfile("Cellular_frac/raw_counts.csv.gz"),row.names=1)
 '''
 ### pre-process
 
@@ -54,14 +54,14 @@ Res<-c(list(data.frame(results(K562,contrast=c("Frac","Cyto","Nuc")))),
 names(Res)<-c("K562","Hela","MDA","MCF","All")
 saveRDS(Res,"Cellular_frac/Res_CytovsNuc")
 '''
-RBP<-read.delim("150_RBP_AGO_DICER.info")
+RBP<-read.delim(gzfile("150_RBP_AGO_DICER.info.gz"))
 RBP$col<-(RBP$Splicing.regulation+RBP$Spliceosome)/3+RBP$microRNA.processing
 RBP[RBP$col>1,46]<-4
 RBP[RBP$col==1,46]<-3
 RBP[RBP$col<1 & RBP$col>0,46]<-2
 RBP[RBP$col==0,46]<-1
 
-FLEXI_RBP<-read.table("all_short_intron_RBP.bed12",
+FLEXI_RBP<-read.table(gzfile("all_short_intron_RBP.bed12.gz"),
                       col.names=c("FLEXI_chr","FLEXI_st","FLEXI_ed","ID","Score",
                                   "Strand","RBP_chr","RBP_st","RBP_ed","RBP",
                                   "Score1","Strand1","ENCODE_ID","Overlaps"))
@@ -451,7 +451,7 @@ length(intersect(dat$Ensbl[dat$MCF7_Nuc>0],dat$Ensbl[dat$MCF7_Cyto>0]))/length(u
 #[1] 0.04901118
 #[1] 0.08603239
 
-### FigS17
+### FigS18
 dat<-read.delim("all.FLEXI")
 Fourcell<-dat[rowSums(dat[,73:76])>0,c(1,7,8)]
 dat<-read.csv("Cellular_frac/raw_counts.csv",row.names = 1)
@@ -522,7 +522,7 @@ set3<-unique(MDA$GName)
 set3<-set3[set3%in%TSG$GName]
 US_list <- c(US_list,list("TSG"=list ("Other cell lines"=set1,"MCF7"=set2,"MDA-MB-231"=set3)))
 
-pdf("Figures/FigS17.pdf",height=8,width=8)
+pdf("Figures/FigS18.pdf",height=8,width=8)
 ht_list =vector(4, mode="list")
 for (i in 1: length(US_list)){
   tmp<-US_list[[i]]
@@ -544,7 +544,7 @@ sort(t(t(setdiff(intersect(tmp$MCF7,tmp$`MDA-MB-231`),tmp$`Other cell lines`))))
 sort(t(t(setdiff(setdiff(tmp$MCF7,tmp$`MDA-MB-231`),tmp$`Other cell lines`))))
 sort(sort(t(t(setdiff(setdiff(tmp$`MDA-MB-231`,tmp$MCF7),tmp$`Other cell lines`)))))
 
-##FigS18
+##FigS19
 ### scatter plots , CPM of frac
 '''
 dat<-read.csv("Cellular_frac/raw_counts.csv",row.names=1)
@@ -608,7 +608,7 @@ pcol<-c("gray80","red","skyblue","orange","brown","blue1")
 pcol<-col2hex(pcol)
 pcol<-paste0(pcol,"80")
 ### 
-pdf("Figures/FigS18.pdf",height=8,width=8)
+pdf("Figures/FigS19.pdf",height=8,width=8)
 par(mfrow=c(2,2),pty="s",pch=16)
 plot(dat$HeLa_Nuc~dat$HeLa_Cyto,col=pcol[dat$Type2],xlim=c(0,20),ylim=c(0,20),
      xlab="Cytoplasm RNA",ylab="Nuclear Rna",main="HeLa S3 (all RNAs)")
@@ -755,7 +755,7 @@ abline(0,1)
 dev.off()
 
 # make png
-png("Figures/FigS18_1.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_1.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 plot(dat$HeLa_Nuc~dat$HeLa_Cyto,col=pcol[dat$Type2],xlim=c(0,20),ylim=c(0,20),
      xlab=NA,ylab=NA,main=NA,axes=F)
@@ -780,7 +780,7 @@ axis(1,at=seq(0,20,5),labels = NA)
 axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
-png("Figures/FigS18_2.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_2.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 ### protein
 tmp<-dat[dat$Type2=="Protein coding",]
@@ -806,7 +806,7 @@ axis(1,at=seq(0,20,5),labels = NA)
 axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
-png("Figures/FigS18_3.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_3.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 #lncRNA
 tmp<-dat[dat$Type2=="lncRNA",]
@@ -833,7 +833,7 @@ axis(1,at=seq(0,20,5),labels = NA)
 axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
-png("Figures/FigS18_4.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_4.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 ### sncRNA
 tmp<-dat[dat$Type2=="sncRNA",]
@@ -863,7 +863,7 @@ axis(1,at=seq(0,20,5),labels = NA)
 axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
-png("Figures/FigS18_5.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_5.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 ### repeat elements
 tmp<-dat[dat$Type2=="Repeat element",]
@@ -899,7 +899,7 @@ axis(1,at=seq(0,20,5),labels = NA)
 axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
-png("Figures/FigS18_6.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_6.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 ### tRNA
 tmp<-dat[dat$Type2=="tRNA",]
@@ -925,7 +925,7 @@ axis(1,at=seq(0,20,5),labels = NA)
 axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
-png("Figures/FigS18_7.png",height=3,width=12,units = "in",res = 600)
+png("Figures/FigS19_7.png",height=3,width=12,units = "in",res = 600)
 par(mfrow=c(1,4),pty="s",pch=16,mar=c(1,1,1,1))
 
 ## MT genes
@@ -954,7 +954,7 @@ axis(2,at=seq(0,20,5),labels = NA)
 dev.off()
 
 ### make legend
-pdf("Figures/FigS18_legend.pdf",height=9,width=6)
+pdf("Figures/FigS19_legend.pdf",height=9,width=6)
 pcol<-c("gray80","red","skyblue","orange","brown","blue1")
 pcol<-col2hex(pcol)
 par(mfrow=c(3,2),pty="s",pch=16)

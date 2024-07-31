@@ -10,7 +10,7 @@ library(pheatmap)
 library(DESeq2)
 library(ashr)
 #FLEXI count input
-dat<-read.table("Cellular_frac/raw_counts.csv",header=T,sep=",",row.names=1)
+dat<-read.table(gzfile("Cellular_frac/raw_counts.csv.gz"),header=T,sep=",",row.names=1)
 
 coldata_DE<- data.frame(Fraction=rep(c("Total", "Nuc", "Cyto"), 8), 
                         Cell=rep(c("Hela","K562","MDA","MCF7"), each=6), 
@@ -38,7 +38,7 @@ rld1<- rlog(dds1, blind=F)
 pcaData <- plotPCA(rld1, intgroup=c("Fraction", "Cell"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-pdf("Figures/FigS19A.pdf",height=3,width=4.5)
+pdf("Figures/FigS20A.pdf",height=3,width=4.5)
 ggplot(pcaData, aes(PC1, PC2, color=Cell, shape=Fraction)) +
   geom_point(size=2) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
@@ -62,7 +62,7 @@ dds1_HeLa<- DESeq(dds1_HeLa, betaPrior = F)
 #rld transform
 rld1_HeLa<- rlog(dds1_HeLa, blind=F)
 
-pdf("Figures/FigS19B_1.pdf",height=2,width=3)
+pdf("Figures/FigS20B_1.pdf",height=2,width=3)
 pcaData <- plotPCA(rld1_HeLa, intgroup=c("Fraction"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(PC1, PC2, color=Fraction)) +
@@ -90,7 +90,7 @@ dds1_K562<- DESeq(dds1_K562, betaPrior = F)
 #rld transform
 rld1_K562<- rlog(dds1_K562, blind=F)
 
-pdf("Figures/FigS19B_2.pdf",height=2,width=3)
+pdf("Figures/FigS20B_2.pdf",height=2,width=3)
 pcaData <- plotPCA(rld1_K562, intgroup=c("Fraction"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(PC1, PC2, color=Fraction)) +
@@ -117,7 +117,7 @@ dds1_MDA<- DESeq(dds1_MDA, betaPrior = F)
 #rld transform
 rld1_MDA<- rlog(dds1_MDA, blind=F)
 
-pdf("Figures/FigS19B_3.pdf",height=2,width=3)
+pdf("Figures/FigS20B_3.pdf",height=2,width=3)
 pcaData <- plotPCA(rld1_MDA, intgroup=c("Fraction"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(PC1, PC2, color=Fraction)) +
@@ -144,7 +144,7 @@ dds1_MCF7<- DESeq(dds1_MCF7, betaPrior = F)
 #rld transform
 rld1_MCF7<- rlog(dds1_MCF7, blind=F)
 
-pdf("Figures/FigS19B_4.pdf",height=2,width=3)
+pdf("Figures/FigS20B_4.pdf",height=2,width=3)
 pcaData <- plotPCA(rld1_MCF7, intgroup=c("Fraction"), returnData=TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(PC1, PC2, color=Fraction)) +
@@ -169,7 +169,7 @@ sampleDistMatrix <- as.matrix(sampleDists)
 colnames(sampleDistMatrix) <- NULL
 colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 
-pdf("Figures/FigS19C.pdf",height=3.5,width=5)
+pdf("Figures/FigS20C.pdf",height=3.5,width=5)
 pheatmap(sampleDistMatrix,
          cluster_rows=F,
          cluster_cols=F,

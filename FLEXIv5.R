@@ -170,7 +170,7 @@ Fig1B<-Fig1B[,c(8,1:6)]
 write.table(Fig1B, "Fig1B_table.tsv",quote=F,sep="\t",row.names=F)
 '''
 #make Fig 1B
-Fig1B<-read.delim("Fig1B_table.tsv")
+Fig1B<-read.delim(gzfile("Fig1B_table.tsv.gz"))
 pdf("Figures/Fig1B.pdf")
 tt <- ttheme_default(base_size=8,colhead=list(fg_params = list(parse=TRUE,fontface="plain")))
 colnames(Fig1B)<-c("Dataset","FLEXI \nRNAs","Agotron\nonly","Mirtron\nonly","Agotron\nand\nMirtron",
@@ -276,7 +276,7 @@ rm(list=c("GC.line","length.line","MFE.line","col","dat1"))
 #Fig3A density plot of RPM with sncRNA markers
 ##New ID with scale of sncRNA
 ##Fig3A, RPM density of FLEXIs, different group
-gene_counts<-read.delim("combined_counts.tsv")
+gene_counts<-read.delim(gzfile("combined_counts.tsv.gz"))
 gene_counts[gene_counts$Type=="scaRNA",3]<-"snoRNA"
 snoRNA<-gene_counts[gene_counts$Type=="snoRNA",c(2,6:10)]
 snoRNA<-separate(snoRNA,col = "Name",into = "Name",sep = "-",remove = T)
@@ -438,7 +438,7 @@ Cell_counts[Cell_counts==0]<-2^-10
 colnames(Cell_counts)[2:4]<-colnames(Cell_unfrag_counts)[48:50]
 write.table(Cell_counts,"Fig3A_downsampled.counts",quote=F,sep="\t",row.names=F)
 '''
-Cell_counts_down<-read.delim("Fig3A_downsampled.counts")
+Cell_counts_down<-read.delim(gzfile("Fig3A_downsampled.counts.gz"))
 
 ### add FLEXI marker for label
 #pick<-c("23I_DOCK6___ENSG00000130158___ENST00000587656___protein_coding___protein_coding",
@@ -743,7 +743,7 @@ rm(list=c("temp","cor_p","GID_list","sig.x","sig.y","sig","cor_s","y_max","cocor
 # Fig3D.xlsx
 
 #Fig4A bar plot and FigS9, only Cellular FLEXIs in HEk,Hela,K562 and UHRR
-RBP_4cell<-read.table("4cell_plasma_combined_RBP.info",col.names=c("ID","RBP"))
+RBP_4cell<-read.table(gzfile("4cell_plasma_combined_RBP.info.gz"),col.names=c("ID","RBP"))
 FLEXI<-dat[rowSums(dat[,73:76])>0,]
 RBP_4cell<-RBP_4cell[RBP_4cell$ID%in%FLEXI$ID,]
 RBP_4cell<-unique(RBP_4cell)
@@ -1107,7 +1107,7 @@ rm(icol,temp,RBP_clus_image)
 #FigS1 barplot, profile of TGIRT-seq
 #FigS1
 #Barplot of profile in all sample (combiend)
-Cell_counts<-read.delim("combined_run.counts")
+Cell_counts<-read.delim(gzfile("combined_run.counts.gz"))
 Cell_counts$K562<-rowSums(Cell_counts[,c(22:29)])
 Cell_counts$HEK<-rowSums(Cell_counts[,c(30:37)])
 Cell_counts$Hela<-rowSums(Cell_counts[,c(38:47)])
@@ -1233,10 +1233,10 @@ for (i in 1:4){
 dev.off()
 
 ## plot insert RPM of short/long FLEXIs
-longFLEXI<-list(read.table("K562.longFLEXI.counts",col.names=c("ID","Counts")))
-longFLEXI[[2]]<-read.table("HEK.longFLEXI.counts",col.names=c("ID","Counts"))
-longFLEXI[[3]]<-read.table("Hela.longFLEXI.counts",col.names=c("ID","Counts"))
-longFLEXI[[4]]<-read.table("UHRR.longFLEXI.counts",col.names=c("ID","Counts"))
+longFLEXI<-list(read.table(gzfile("K562.longFLEXI.counts.gz"),col.names=c("ID","Counts")))
+longFLEXI[[2]]<-read.table(gzfile("HEK.longFLEXI.counts.gz"),col.names=c("ID","Counts"))
+longFLEXI[[3]]<-read.table(gzfile("Hela.longFLEXI.counts.gz"),col.names=c("ID","Counts"))
+longFLEXI[[4]]<-read.table(gzfile("UHRR.longFLEXI.counts.gz"),col.names=c("ID","Counts"))
 names(longFLEXI)<-c("K562","HEK","Hela","UHRR")
 shortFLEXI<-dat[,c(1,74:76,73)]
 tmp_total<-mapped_reads[c(4,5,6,3)]
@@ -1576,7 +1576,7 @@ for (i in 1:2){
 }
 rm(tsne,W,zinb,col,BR_col,i,file_name,name,obj_name,cutoff,P_pch,pdf_name,pca,pca_dat,dat1)
 
-#FigS7C
+#FigS9A
 ### FLEXI biomarker
 dat<-read.delim("all.FLEXI")
 dat1<-read.delim("Bio2.FLEXI.counts")
@@ -1619,7 +1619,7 @@ ht<-readRDS("FLEXI_cell_all_rep_heatmap.obj")
 pick<-rev(ht$rowInd)[1:100]
 tmp1<-dat1[pick,]
 rowLab<-str_split_i(rownames(tmp1),pattern = "___",i=1)
-pdf("Figures/FigS7C.pdf",height=11,width=8.5)
+pdf("Figures/FigS9A.pdf",height=11,width=8.5)
 heatmap.2(as.matrix(tmp1),labRow = rowLab,
           dendrogram = "none",labCol=colnames(tmp1),
           scale="none",breaks=seq(-7,1,0.08),cexRow = 0.1,
@@ -1628,7 +1628,7 @@ heatmap.2(as.matrix(tmp1),labRow = rowLab,
           col =heatPalette)
 dev.off()
 
-### FigS7D
+### FigS9B
 ### examples of cell-specific FLEXIs, also marked in Fig3B
 pick<-c("2I_ACTG1___ENSG00000184009___ENST00000575842___protein_coding___protein_coding",
         "1I_RPS2___ENSG00000140988___ENST00000526586___protein_coding___protein_coding",
@@ -1645,7 +1645,7 @@ dat1<-data.frame(label=c(rep("MCF",8),rep("Hela",10),
                          rep("MDA_Bio2",5),rep("UHRR_Bio2",10),rep("K562_Bio2",7),rep("HEK_Bio2",2)))
 dat2<-dat[dat$ID%in%pick,]
 dat2<-dat2[match(pick,dat2$ID),]
-pdf("Figures/FigS7D.pdf",height=12,width=8)
+pdf("Figures/FigS9B.pdf",height=12,width=8)
 par(mfrow=c(5,2),cex=0.5)
 for(i in 1:dim(dat2)[1]){
   tmp<-cbind(t(dat2[i,2:69]),dat1)
@@ -1656,16 +1656,15 @@ for(i in 1:dim(dat2)[1]){
 }
 dev.off()
 
-
-#FigS10 created by Shelby, RBP binding site location
-#FigS11 made by Shelby, FLEXIreads in eCLIP dataset
+#FigS11 created by Shelby, RBP binding site location
+#FigS12 made by Shelby, FLEXIreads in eCLIP dataset
 # raw data in S5 table
-#FigS12 created by RBP_clus_byCellType.R
-#FigS14 plotted by ENCODE_DE_ver2.R
-#FigS15 plotted by ENCODE_rMAT.R
+#FigS13 plotted by ENCODE_DE_ver2.R
+#FigS14 plotted by ENCODE_rMAT.R
+#FigS15 created by RBP_clus_byCellType.R
 
 
-#FigS13 individual RBP scatter and density plots
+#FigS16 individual RBP scatter and density plots
 #individual 4 panel for each 47 rbPs
 FLEXI<-dat$ID[rowSums(dat[,73:76])>0]
 FLEXI<-dat[dat$ID%in%FLEXI,]
@@ -1695,7 +1694,7 @@ RBP_list<-RBP_list[c(7,8,19,22,23,25,37,43,50,
                      3,5,11,29,31,39,
                      13,14,15,17,20,21,26,27,28,30,33,34,35,36,38,41,42,51)]
 
-pdf("Figures/FigS12.pdf",width=8,height=20,onefile = T)
+pdf("Figures/FigS16.pdf",width=8,height=20,onefile = T)
 par(mfrow=c(10,4),pch=16,pty="s",mar=c(2,2,2,2))
 for (i in 1:53) {
   FLEXI_list<-unique(RBP_4cell_plasma$ID[RBP_4cell_plasma$RBP%in%RBP_list[i]])
@@ -1800,7 +1799,7 @@ dev.off()
 
 ## Gower distance object and heatmap in make_RBP_clusTable.R
 
-### figure S16
+### figure S17
 ### RBP sites overlap
 RBP_over<-read.table("FLEXI_RBP.overlapMax1Overlap.info",
                      col.names=c("ID","Overlap"))
@@ -1837,7 +1836,7 @@ Clusters<-list(Cluster1=c("LARP4","PABPC4","SUB1","DDX3X","RPS3","NCBP2","DDX55"
                Cluster5=c("AATF","DKC1","NOLC1","SMNDC1"),
                Cluster6=c("AGO","DICER"))
 
-pdf("Figures/FigS16.pdf",height=11,width=8)
+pdf("Figures/FigS17.pdf",height=11,width=8)
 for (i in 1:6){
   tmp<-RBP_matrix[,Clusters[[i]]]
   y_max<-2
@@ -1862,8 +1861,8 @@ dev.off()
 
 ## Fig10,11,12A plotted by Cellular_cluster.r
 ## Fig12B from String database results
-## FigS17, S18
-## FigS19 plotted by Peter. in Cell_frac_peter.R
+## FigS18, S19 in Cellular_cluster.r
+## FigS20 plotted by Peter. in Cell_frac_peter.R
 
 plot_upset <- function(m, i) {
   cs = comb_size(m)  
@@ -1917,7 +1916,7 @@ for (i in 1: length(Clusters)){
 patchwork::wrap_plots(ht_list, ncol=2)
 dev.off()
 
-## FigS20
+## FigS21
 ## A/B numbers
 mitocarat<-read.table("mitocarta.genes")
 NR<-read.table("RIbosome.gene")

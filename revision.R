@@ -423,4 +423,24 @@ for (i in 1:length(RBP53)){
 }
 dev.off()
 
+# Fig4A_2 grids like for OSI and LI
+### new 4A_2
+RBP53<-read.delim("53_RBP_info_fig4_7_new.txt")
+RBP_clus_image<-data.frame(read_xlsx("RBP_clus_image.xlsx",sheet= 1))
+rownames(RBP_clus_image)<-RBP_clus_image$Cell
+RBP_clus_image<-RBP_clus_image[,-1]
+RBP_clus_image<-RBP_clus_image+1
+RBP_clus_image<-data.frame(t(RBP_clus_image))
+RBP_clus_image$RBP.name<-rownames(RBP_clus_image)
+temp<-RBP53[match(RBP_clus_image$RBP.name,RBP53$RBP.name),]
+RBP_clus_image<-cbind(RBP_clus_image,temp)
+icol<-c("white",brewer.pal(12,"Paired"))
 
+pdf("temp_fig/Fig9_2.pdf",width=12,height=8)
+par(mfrow=c(2,1),mar = c(5,2,2,20))
+image(1:28,1:3,as.matrix(RBP_clus_image[,c(44:45,54)]),col=c("white","blue","blue","blue","blue"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:3,labels = colnames(RBP_clus_image)[c(44:45,54)],tick = FALSE)
+image(1:28,1:3,as.matrix(RBP_clus_image[,c(46:47,55)]),col=c("white","blue","blue","blue","blue"),bty="n",axes=F,xlab=NA,ylab=NA)
+axis(4,las=2,at = 1:3,labels = colnames(RBP_clus_image)[c(46:47,55)],tick = FALSE)
+axis(1,las=2,at = 1:28,labels = RBP_clus_image$RBP.name,tick = FALSE,cex=0.25)
+dev.off()
